@@ -3,6 +3,8 @@ import { createItem, deleteItem, fetchItems } from './api'
 import type { InventoryItem } from './types'
 import './App.css'
 
+const UNITS = ['g', 'kg', 'ml', 'l', 'pcs']
+
 const emptyForm = {
   name: '',
   category: '',
@@ -26,12 +28,12 @@ function App() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name || !form.category || !form.quantity || !form.unit) return
+    if (!form.name || !form.quantity || !form.unit) return
 
     try {
       await createItem({
         name: form.name,
-        category: form.category,
+        category: form.category || null,
         quantity: Number(form.quantity),
         unit: form.unit,
         expiry_date: form.expiry_date || null,
@@ -55,6 +57,7 @@ function App() {
   return (
     <main className="app">
       <h1>pantry-core</h1>
+      <p className="subtitle">Kitchen inventory</p>
 
       {error && <p className="error">{error}</p>}
 
@@ -65,7 +68,7 @@ function App() {
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
         <input
-          placeholder="Category"
+          placeholder="Category (optional)"
           value={form.category}
           onChange={(e) => setForm({ ...form, category: e.target.value })}
         />
@@ -75,11 +78,19 @@ function App() {
           value={form.quantity}
           onChange={(e) => setForm({ ...form, quantity: e.target.value })}
         />
-        <input
-          placeholder="Unit"
+        <select
           value={form.unit}
           onChange={(e) => setForm({ ...form, unit: e.target.value })}
-        />
+        >
+          <option value="" disabled>
+            Unit
+          </option>
+          {UNITS.map((unit) => (
+            <option key={unit} value={unit}>
+              {unit}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           value={form.expiry_date}
@@ -93,10 +104,15 @@ function App() {
           <li key={item.id} className="item">
             <div className="item-info">
               <span className="item-name">{item.name}</span>
-              <span className="item-details">
-                {item.quantity} {item.unit} · {item.category}
-                {item.expiry_date && ` · expires ${item.expiry_date}`}
-              </span>
+              <div className="item-details">
+                <span>
+                  {item.quantity} {item.unit}
+                </span>
+                {item.category && <span className="pill">{item.category}</span>}
+                {item.expiry_date && (
+                  <span className="pill pill-expiry">expires {item.expiry_date}</span>
+                )}
+              </div>
             </div>
             <button className="delete" onClick={() => handleDelete(item.id)}>
               Remove
