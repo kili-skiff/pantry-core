@@ -21,7 +21,6 @@ build/
 
 # Editor/OS
 .DS_Store
-.vscode/
 .idea/
 
 # Claude Code Arbeitsgedächtnis
