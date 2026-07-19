@@ -38,9 +38,17 @@ npm run dev
 
 Backend runs on `:8000`, frontend on `:5173`.
 
+Backend tests:
+
+```bash
+cd backend
+./.venv/bin/pip install -r requirements-dev.txt
+./.venv/bin/pytest
+```
+
 ## Status
 
-MVP (manual inventory tracking) works end to end. Not yet done: automated
-tests, input validation, deployment to the Pi. Planned later: expiry
-warnings, barcode scanning, importing items by scanning a supermarket
-receipt.
+MVP (manual inventory tracking) works end to end, backend covered by
+pytest. Not yet done: input validation, deployment to the Pi. Planned
+later: expiry warnings, barcode scanning, importing items by scanning a
+supermarket receipt.
