@@ -33,6 +33,13 @@ def test_create_item_without_expiry_date(client):
     assert response.json()["expiry_date"] is None
 
 
+def test_create_item_without_category(client):
+    payload = {"name": "Bread", "quantity": 1, "unit": "pcs"}
+    response = client.post("/items", json=payload)
+    assert response.status_code == 201
+    assert response.json()["category"] is None
+
+
 def test_delete_item(client):
     create_response = client.post(
         "/items",
