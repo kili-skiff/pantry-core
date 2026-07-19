@@ -1,6 +1,9 @@
 import type { InventoryItem, InventoryItemInput } from './types'
 
-const API_BASE = 'http://127.0.0.1:8000'
+// Dev-Server (:5173) und Backend (:8000) laufen getrennt, brauchen also die
+// volle URL. Im Production-Build liefert FastAPI Frontend und API von
+// derselben Origin aus, daher reicht dort ein relativer Pfad.
+const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 
 export async function fetchItems(): Promise<InventoryItem[]> {
   const res = await fetch(`${API_BASE}/items`)
