@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Datenbank
+*.db
+*.sqlite3
+
+# Umgebung/Secrets
+.env
+.env.local
+
+# Editor/OS
+.DS_Store
+.vscode/
+.idea/
+
+# Claude Code Arbeitsgedächtnis
+CLAUDE.md
