@@ -46,6 +46,17 @@ cd backend
 ./.venv/bin/pytest
 ```
 
+## VS Code
+
+`.vscode/` has tasks and debug configs set up:
+
+- "Terminal → Run Task" → "Start all (backend + frontend)" runs both dev
+  servers.
+- "Run and Debug" panel has configs to debug the backend (breakpoints in
+  FastAPI routes) and to run pytest with breakpoints.
+- The Testing panel (beaker icon) discovers and runs the backend tests
+  individually or all at once.
+
 ## Status
 
 MVP (manual inventory tracking) works end to end, backend covered by
