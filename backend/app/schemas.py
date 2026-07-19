@@ -7,7 +7,7 @@ from app.models import Source
 
 class InventoryItemBase(BaseModel):
     name: str
-    category: str
+    category: str | None = None
     quantity: float
     unit: str
     expiry_date: date | None = None

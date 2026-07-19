@@ -3,7 +3,7 @@ export type Source = 'manual' | 'imported'
 export interface InventoryItem {
   id: number
   name: string
-  category: string
+  category: string | null
   quantity: number
   unit: string
   expiry_date: string | null
@@ -13,7 +13,7 @@ export interface InventoryItem {
 
 export interface InventoryItemInput {
   name: string
-  category: string
+  category: string | null
   quantity: number
   unit: string
   expiry_date: string | null
