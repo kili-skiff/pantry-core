@@ -56,6 +56,9 @@ cd backend
   FastAPI routes) and to run pytest with breakpoints.
 - The Testing panel (beaker icon) discovers and runs the backend tests
   individually or all at once.
+- Recommended extensions (Black Formatter, Ruff) give format-on-save and
+  lint fixes for the backend. "Run Task" also has "Backend: format
+  (black)" and "Backend: lint (ruff)" for running them manually.
 
 ## Status
 

@@ -22,4 +22,6 @@ class InventoryItem(Base):
     unit: Mapped[str] = mapped_column(String, nullable=False)
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     added_at: Mapped[date] = mapped_column(Date, nullable=False, default=date.today)
-    source: Mapped[Source] = mapped_column(Enum(Source), nullable=False, default=Source.manual)
+    source: Mapped[Source] = mapped_column(
+        Enum(Source), nullable=False, default=Source.manual
+    )
