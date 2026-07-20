@@ -29,6 +29,7 @@ function App() {
   const [form, setForm] = useState(emptyForm)
   const [productId, setProductId] = useState<number | null>(null)
   const [scanning, setScanning] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState(getInitialTheme)
 
@@ -61,6 +62,7 @@ function App() {
       setForm(emptyForm)
       setProductId(null)
       setError(null)
+      setFormOpen(false)
       loadItems()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add item.')
@@ -127,66 +129,6 @@ function App() {
 
       {error && <p className="error">{error}</p>}
 
-      {scanning && (
-        <Suspense fallback={<p className="scanner-loading">Loading scanner...</p>}>
-          <BarcodeScanner
-            onDetected={handleBarcodeDetected}
-            onClose={() => setScanning(false)}
-          />
-        </Suspense>
-      )}
-
-      <form className="add-form" onSubmit={handleSubmit}>
-        <div className="name-field">
-          <input
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <button
-            type="button"
-            className="scan-button"
-            aria-label="Scan barcode"
-            onClick={() => setScanning(true)}
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
-              <path d="M7 8v8M10 8v8M13 8v8M16 8v8" />
-            </svg>
-          </button>
-        </div>
-        <input
-          placeholder="Category (optional)"
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-        />
-        <input
-          placeholder="Quantity"
-          type="number"
-          value={form.quantity}
-          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-        />
-        <select
-          value={form.unit}
-          onChange={(e) => setForm({ ...form, unit: e.target.value })}
-        >
-          <option value="" disabled>
-            Unit
-          </option>
-          {UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {unit}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={form.expiry_date}
-          onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
-        />
-        <button type="submit">Add</button>
-      </form>
-
       <ul className="item-list">
         {items.map((item) => (
           <li key={item.id} className="item">
@@ -209,6 +151,101 @@ function App() {
         ))}
         {items.length === 0 && <li className="empty">No items yet.</li>}
       </ul>
+
+      {formOpen && (
+        <div className="add-overlay" onClick={() => setFormOpen(false)}>
+          <div className="add-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="add-panel-header">
+              <h2>Add item</h2>
+              <button
+                type="button"
+                className="add-panel-close"
+                aria-label="Close"
+                onClick={() => setFormOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <form className="add-form" onSubmit={handleSubmit}>
+              <div className="name-field">
+                <input
+                  placeholder="Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="scan-button"
+                  aria-label="Scan barcode"
+                  onClick={() => setScanning(true)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+                    <path d="M7 8v8M10 8v8M13 8v8M16 8v8" />
+                  </svg>
+                </button>
+              </div>
+              <input
+                placeholder="Category (optional)"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+              <input
+                placeholder="Quantity"
+                type="number"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+              />
+              <select
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              >
+                <option value="" disabled>
+                  Unit
+                </option>
+                {UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={form.expiry_date}
+                onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
+              />
+              <button type="submit">Add</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {scanning && (
+        <div className="scanner-overlay">
+          <Suspense fallback={<p className="scanner-loading">Loading scanner...</p>}>
+            <BarcodeScanner
+              onDetected={handleBarcodeDetected}
+              onClose={() => setScanning(false)}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {!formOpen && (
+        <button
+          type="button"
+          className="fab"
+          aria-label="Add item"
+          onClick={() => setFormOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
     </main>
   )
 }
