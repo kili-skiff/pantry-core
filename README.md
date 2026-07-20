@@ -6,9 +6,12 @@ built to run on a Raspberry Pi 5 with a touchscreen.
 ## What works right now
 
 - Backend API to add, list, and remove inventory items (name, category,
-  quantity, unit, expiry date)
+  quantity, unit, expiry date), with input validation
 - Web UI showing the current inventory as a list, with a form to add items
   and a button to remove them
+- Barcode scanning: camera-based scan (webcam, via ZXing) or manual entry
+  looks up the product locally or via Open Food Facts, pre-fills the add
+  form
 
 ## Stack
 
@@ -72,6 +75,6 @@ trade-offs behind them in `docs/decisions/0002-pi-deployment.md`.
 ## Status
 
 MVP (manual inventory tracking) works end to end, backend covered by
-pytest, deployed to the Pi and running in kiosk mode. Not yet done: input
-validation, frontend tests. Planned later: expiry warnings, barcode
-scanning, importing items by scanning a supermarket receipt.
+pytest, deployed to the Pi and running in kiosk mode. Barcode scanning is
+in place too. Not yet done: frontend tests. Planned later: expiry
+warnings, importing items by scanning a supermarket receipt.
