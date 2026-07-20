@@ -14,6 +14,7 @@ class InventoryItemBase(BaseModel):
     quantity: float = Field(gt=0)
     unit: Unit
     expiry_date: date | None = None
+    min_quantity: float | None = Field(default=None, ge=0)
 
     @field_validator("name", mode="before")
     @classmethod
@@ -23,6 +24,12 @@ class InventoryItemBase(BaseModel):
 
 class InventoryItemCreate(InventoryItemBase):
     product_id: int | None = None
+
+
+class InventoryItemUpdate(BaseModel):
+    quantity: float = Field(gt=0)
+    expiry_date: date | None = None
+    min_quantity: float | None = Field(default=None, ge=0)
 
 
 class InventoryItemRead(InventoryItemBase):
