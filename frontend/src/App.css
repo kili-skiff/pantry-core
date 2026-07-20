@@ -65,15 +65,17 @@ h1 {
   position: relative;
   width: 100%;
   max-width: 420px;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius);
+  background: black;
 }
 
 .scanner-video {
   display: block;
   width: 100%;
-  border-radius: var(--radius);
-  background: black;
+  height: 100%;
+  object-fit: cover;
 }
 
 .scanner-guide {
