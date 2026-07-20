@@ -26,6 +26,7 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
   const onDetectedRef = useRef(onDetected)
   onDetectedRef.current = onDetected
   const [error, setError] = useState<string | null>(null)
+  const [manualCode, setManualCode] = useState('')
 
   useEffect(() => {
     const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS, POSSIBLE_FORMATS]])
@@ -67,6 +68,13 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
     }
   }, [])
 
+  function handleManualSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const code = manualCode.trim()
+    if (!code) return
+    onDetectedRef.current(code)
+  }
+
   return (
     <div className="scanner">
       <div className="scanner-frame">
@@ -75,6 +83,14 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
       </div>
       {error && <p className="error">{error}</p>}
       <p className="scanner-hint">Position the barcode inside the frame</p>
+      <form className="scanner-manual" onSubmit={handleManualSubmit}>
+        <input
+          placeholder="Or type the barcode number"
+          value={manualCode}
+          onChange={(e) => setManualCode(e.target.value)}
+        />
+        <button type="submit">Look up</button>
+      </form>
       <button type="button" className="scanner-cancel" onClick={onClose}>
         Cancel
       </button>
