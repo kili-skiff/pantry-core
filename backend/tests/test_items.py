@@ -82,3 +82,35 @@ def test_create_item_strips_name(client):
     )
     assert response.status_code == 201
     assert response.json()["name"] == "Milk"
+
+
+def test_create_item_with_product_id_sets_scanned_source(client, monkeypatch):
+    from app import open_food_facts
+
+    monkeypatch.setattr(
+        open_food_facts,
+        "lookup",
+        lambda barcode: open_food_facts.LookupResult(name="Nutella"),
+    )
+    product_id = client.get("/products/3017620422003").json()["id"]
+
+    response = client.post(
+        "/items",
+        json={
+            "name": "Nutella",
+            "quantity": 1,
+            "unit": "pcs",
+            "product_id": product_id,
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source"] == "scanned"
+    assert body["product_id"] == product_id
+
+
+def test_create_item_rejects_unknown_product_id(client):
+    response = client.post(
+        "/items", json={"name": "Milk", "quantity": 1, "unit": "l", "product_id": 999}
+    )
+    assert response.status_code == 404
