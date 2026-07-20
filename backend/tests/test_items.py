@@ -57,3 +57,28 @@ def test_delete_item(client):
 def test_delete_item_not_found(client):
     response = client.delete("/items/999")
     assert response.status_code == 404
+
+
+def test_create_item_rejects_blank_name(client):
+    response = client.post("/items", json={"name": "   ", "quantity": 1, "unit": "pcs"})
+    assert response.status_code == 422
+
+
+def test_create_item_rejects_non_positive_quantity(client):
+    response = client.post("/items", json={"name": "Milk", "quantity": 0, "unit": "l"})
+    assert response.status_code == 422
+
+
+def test_create_item_rejects_unknown_unit(client):
+    response = client.post(
+        "/items", json={"name": "Milk", "quantity": 1, "unit": "gallon"}
+    )
+    assert response.status_code == 422
+
+
+def test_create_item_strips_name(client):
+    response = client.post(
+        "/items", json={"name": "  Milk  ", "quantity": 1, "unit": "l"}
+    )
+    assert response.status_code == 201
+    assert response.json()["name"] == "Milk"
