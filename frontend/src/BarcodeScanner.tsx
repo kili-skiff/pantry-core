@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BarcodeFormat, BrowserMultiFormatReader } from '@zxing/browser'
 import type { IScannerControls } from '@zxing/browser'
+import { DecodeHintType } from '@zxing/library'
+
+// Grocery barcodes (1D) plus QR for self-printed labels on items that
+// don't have one - the other formats zxing supports (PDF417, Aztec,
+// DataMatrix, MaxiCode, Micro QR) aren't relevant here and checking for
+// them on every frame is wasted CPU, especially on the Pi.
+const POSSIBLE_FORMATS = [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.QR_CODE,
+]
 
 interface Props {
   onDetected: (barcode: string) => void
@@ -14,12 +27,18 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const reader = new BrowserMultiFormatReader()
+    const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS, POSSIBLE_FORMATS]])
+    const reader = new BrowserMultiFormatReader(hints)
     let cancelled = false
     let controls: IScannerControls | undefined
 
     reader
-      .decodeFromVideoDevice(undefined, videoRef.current ?? undefined, (result) => {
+      // Not decodeFromVideoDevice(undefined, ...): that requests
+      // { facingMode: 'environment' }, a front/back-camera preference that
+      // makes no sense for a desktop USB webcam - Firefox throws
+      // NotFoundError for it instead of falling back. { video: true } just
+      // asks for whatever camera is available.
+      .decodeFromConstraints({ video: true }, videoRef.current ?? undefined, (result) => {
         if (result) {
           controls?.stop()
           onDetectedRef.current(result.getText())
@@ -35,7 +54,11 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
           controls = c
         }
       })
-      .catch(() => setError('Could not access the camera.'))
+      .catch((err) => {
+        console.error('Barcode scanner failed to start:', err)
+        const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+        setError(`Could not access the camera (${detail}).`)
+      })
 
     return () => {
       cancelled = true
