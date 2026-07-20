@@ -22,12 +22,23 @@ class InventoryItemBase(BaseModel):
 
 
 class InventoryItemCreate(InventoryItemBase):
-    pass
+    product_id: int | None = None
 
 
 class InventoryItemRead(InventoryItemBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    product_id: int | None
     added_at: date
     source: Source
+
+
+class ProductRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    barcode: str
+    name: str
+    category: str | None = None
+    default_unit: str | None = None

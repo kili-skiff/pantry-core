@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
-import { createItem, deleteItem, fetchItems } from './api'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { createItem, deleteItem, fetchItems, lookupProduct } from './api'
 import type { InventoryItem } from './types'
 import './App.css'
+
+// @zxing/library is large and only needed once someone actually scans -
+// keep it out of the main bundle.
+const BarcodeScanner = lazy(() => import('./BarcodeScanner'))
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'pcs']
 const THEME_KEY = 'pantry-core-theme'
@@ -23,6 +27,8 @@ const emptyForm = {
 function App() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [form, setForm] = useState(emptyForm)
+  const [productId, setProductId] = useState<number | null>(null)
+  const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState(getInitialTheme)
 
@@ -50,8 +56,10 @@ function App() {
         quantity: Number(form.quantity),
         unit: form.unit,
         expiry_date: form.expiry_date || null,
+        product_id: productId,
       })
       setForm(emptyForm)
+      setProductId(null)
       setError(null)
       loadItems()
     } catch (err) {
@@ -65,6 +73,28 @@ function App() {
       loadItems()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete item.')
+    }
+  }
+
+  async function handleBarcodeDetected(barcode: string) {
+    setScanning(false)
+    try {
+      const product = await lookupProduct(barcode)
+      if (product === null) {
+        setError(`No product found for barcode ${barcode} - enter it manually.`)
+        return
+      }
+      setError(null)
+      setProductId(product.id)
+      setForm({
+        name: product.name,
+        category: product.category ?? '',
+        quantity: '1',
+        unit: product.default_unit ?? 'pcs',
+        expiry_date: '',
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not look up product.')
     }
   }
 
@@ -97,12 +127,34 @@ function App() {
 
       {error && <p className="error">{error}</p>}
 
+      {scanning && (
+        <Suspense fallback={<p className="scanner-loading">Loading scanner...</p>}>
+          <BarcodeScanner
+            onDetected={handleBarcodeDetected}
+            onClose={() => setScanning(false)}
+          />
+        </Suspense>
+      )}
+
       <form className="add-form" onSubmit={handleSubmit}>
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
+        <div className="name-field">
+          <input
+            placeholder="Name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <button
+            type="button"
+            className="scan-button"
+            aria-label="Scan barcode"
+            onClick={() => setScanning(true)}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+              <path d="M7 8v8M10 8v8M13 8v8M16 8v8" />
+            </svg>
+          </button>
+        </div>
         <input
           placeholder="Category (optional)"
           value={form.category}

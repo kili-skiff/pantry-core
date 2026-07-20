@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import models, open_food_facts, schemas
 from app.database import get_db
 
 app = FastAPI(title="pantry-core")
@@ -25,7 +25,12 @@ def health():
 
 @app.post("/items", response_model=schemas.InventoryItemRead, status_code=201)
 def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_db)):
-    item = models.InventoryItem(**payload.model_dump())
+    data = payload.model_dump()
+    if data["product_id"] is not None:
+        if db.get(models.Product, data["product_id"]) is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+        data["source"] = models.Source.scanned
+    item = models.InventoryItem(**data)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -35,6 +40,25 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
 @app.get("/items", response_model=list[schemas.InventoryItemRead])
 def list_items(db: Session = Depends(get_db)):
     return db.query(models.InventoryItem).order_by(models.InventoryItem.id).all()
+
+
+@app.get("/products/{barcode}", response_model=schemas.ProductRead)
+def get_product(barcode: str, db: Session = Depends(get_db)):
+    product = db.query(models.Product).filter_by(barcode=barcode).first()
+    if product is not None:
+        return product
+
+    result = open_food_facts.lookup(barcode)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product = models.Product(
+        barcode=barcode, name=result.name, category=result.category
+    )
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
 
 
 @app.delete("/items/{item_id}", status_code=204)

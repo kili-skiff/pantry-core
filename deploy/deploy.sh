@@ -18,7 +18,7 @@ REMOTE_DIR="/home/${PI_USER}/pantry-core"
 SSH="ssh -i ${PI_KEY}"
 
 echo "==> Building frontend"
-(cd "${SCRIPT_DIR}/frontend" && npm run build)
+(cd "${SCRIPT_DIR}/frontend" && npm ci && npm run build)
 
 echo "==> Syncing backend"
 rsync -avz --delete \

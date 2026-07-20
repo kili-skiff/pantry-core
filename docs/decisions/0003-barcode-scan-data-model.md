@@ -1,7 +1,7 @@
 # 3. Barcode scan data model
 
 Date: 2026-07-20
-Status: proposed
+Status: accepted
 
 ## Context
 
