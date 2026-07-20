@@ -1,0 +1,12 @@
+[Unit]
+Description=pantry-core backend
+After=network.target
+
+[Service]
+User=<user>
+WorkingDirectory=/home/<user>/pantry-core/backend
+ExecStart=/home/<user>/pantry-core/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
