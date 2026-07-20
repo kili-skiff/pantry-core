@@ -1,4 +1,4 @@
-import type { InventoryItem, InventoryItemInput } from './types'
+import type { InventoryItem, InventoryItemInput, Product } from './types'
 
 // Dev-Server (:5173) und Backend (:8000) laufen getrennt, brauchen also die
 // volle URL. Im Production-Build liefert FastAPI Frontend und API von
@@ -45,4 +45,13 @@ export async function createItem(input: InventoryItemInput): Promise<InventoryIt
 export async function deleteItem(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/items/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(await errorMessage(res, 'Failed to delete item'))
+}
+
+// null means the barcode isn't known locally or on Open Food Facts - that's
+// an expected outcome (fall back to manual entry), not an error.
+export async function lookupProduct(barcode: string): Promise<Product | null> {
+  const res = await fetch(`${API_BASE}/products/${encodeURIComponent(barcode)}`)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to look up product'))
+  return res.json()
 }

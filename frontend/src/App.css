@@ -48,6 +48,51 @@ h1 {
   font-size: 0.9rem;
 }
 
+.scanner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.scanner-video {
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius);
+  background: black;
+}
+
+.scanner-cancel {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.scan-button {
+  grid-column: span 2;
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.scan-button:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
 .add-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
