@@ -29,6 +29,22 @@
       "dependsOn": ["Backend: dev server", "Frontend: dev server"],
       "dependsOrder": "parallel",
       "problemMatcher": []
+    },
+    {
+      "label": "Backend: format (black)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/.venv/bin/black",
+      "args": ["app/"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: lint (ruff)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/.venv/bin/ruff",
+      "args": ["check", "app/"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
     }
   ]
 }
