@@ -61,11 +61,37 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
-.scanner-video {
+.scanner-frame {
+  position: relative;
   width: 100%;
   max-width: 420px;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.scanner-video {
+  display: block;
+  width: 100%;
   border-radius: var(--radius);
   background: black;
+}
+
+.scanner-guide {
+  position: absolute;
+  top: 22%;
+  left: 20%;
+  right: 20%;
+  height: 56%;
+  border: 3px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.scanner-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .scanner-cancel {
@@ -77,20 +103,38 @@ h1 {
   cursor: pointer;
 }
 
-.scan-button {
-  grid-column: span 2;
-  padding: 0.75rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
+.name-field {
+  position: relative;
 }
 
-.scan-button:hover {
+.name-field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: 2.6rem;
+}
+
+.name-field .scan-button {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.name-field .scan-button:hover {
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
 }
 
 .add-form {

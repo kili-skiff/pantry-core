@@ -9,6 +9,7 @@ import { DecodeHintType } from '@zxing/library'
 // them on every frame is wasted CPU, especially on the Pi.
 const POSSIBLE_FORMATS = [
   BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
   BarcodeFormat.UPC_A,
   BarcodeFormat.UPC_E,
   BarcodeFormat.CODE_128,
@@ -68,8 +69,12 @@ function BarcodeScanner({ onDetected, onClose }: Props) {
 
   return (
     <div className="scanner">
-      <video ref={videoRef} className="scanner-video" muted playsInline />
+      <div className="scanner-frame">
+        <video ref={videoRef} className="scanner-video" muted playsInline />
+        <div className="scanner-guide" />
+      </div>
       {error && <p className="error">{error}</p>}
+      <p className="scanner-hint">Position the barcode inside the frame</p>
       <button type="button" className="scanner-cancel" onClick={onClose}>
         Cancel
       </button>

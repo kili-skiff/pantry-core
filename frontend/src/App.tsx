@@ -89,8 +89,8 @@ function App() {
       setForm({
         name: product.name,
         category: product.category ?? '',
-        quantity: '',
-        unit: product.default_unit ?? '',
+        quantity: '1',
+        unit: product.default_unit ?? 'pcs',
         expiry_date: '',
       })
     } catch (err) {
@@ -137,18 +137,24 @@ function App() {
       )}
 
       <form className="add-form" onSubmit={handleSubmit}>
-        <button
-          type="button"
-          className="scan-button"
-          onClick={() => setScanning(true)}
-        >
-          Scan barcode
-        </button>
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
+        <div className="name-field">
+          <input
+            placeholder="Name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <button
+            type="button"
+            className="scan-button"
+            aria-label="Scan barcode"
+            onClick={() => setScanning(true)}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
+              <path d="M7 8v8M10 8v8M13 8v8M16 8v8" />
+            </svg>
+          </button>
+        </div>
         <input
           placeholder="Category (optional)"
           value={form.category}
