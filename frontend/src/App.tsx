@@ -52,9 +52,10 @@ function App() {
         expiry_date: form.expiry_date || null,
       })
       setForm(emptyForm)
+      setError(null)
       loadItems()
-    } catch {
-      setError('Could not add item.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add item.')
     }
   }
 
@@ -62,8 +63,8 @@ function App() {
     try {
       await deleteItem(id)
       loadItems()
-    } catch {
-      setError('Could not delete item.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete item.')
     }
   }
 

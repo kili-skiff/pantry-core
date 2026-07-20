@@ -5,9 +5,30 @@ import type { InventoryItem, InventoryItemInput } from './types'
 // derselben Origin aus, daher reicht dort ein relativer Pfad.
 const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 
+// FastAPI's error body is either {detail: string} (HTTPException) or
+// {detail: [{msg, loc, ...}]} (Pydantic validation errors).
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json()
+    const detail = body?.detail
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d) => {
+          const field = Array.isArray(d?.loc) ? d.loc.at(-1) : undefined
+          return field ? `${field}: ${d.msg}` : d.msg
+        })
+        .join(', ')
+    }
+  } catch {
+    // response wasn't JSON (e.g. network error page) - fall through
+  }
+  return fallback
+}
+
 export async function fetchItems(): Promise<InventoryItem[]> {
   const res = await fetch(`${API_BASE}/items`)
-  if (!res.ok) throw new Error('Failed to load items')
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to load items'))
   return res.json()
 }
 
@@ -17,11 +38,11 @@ export async function createItem(input: InventoryItemInput): Promise<InventoryIt
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
-  if (!res.ok) throw new Error('Failed to create item')
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to create item'))
   return res.json()
 }
 
 export async function deleteItem(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/items/${id}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error('Failed to delete item')
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to delete item'))
 }
