@@ -14,7 +14,9 @@ built to run on a Raspberry Pi 5 with a touchscreen.
 
 - Backend: FastAPI, SQLAlchemy, SQLite, Alembic
 - Frontend: React, TypeScript, Vite
-- Target: Raspberry Pi 5, touchscreen in kiosk mode (not deployed yet)
+- Runs on a Raspberry Pi 5, touchscreen in kiosk mode (Chromium + labwc)
+
+Reasoning behind these choices is in `docs/decisions/`.
 
 ## Running locally
 
@@ -56,10 +58,20 @@ cd backend
   FastAPI routes) and to run pytest with breakpoints.
 - The Testing panel (beaker icon) discovers and runs the backend tests
   individually or all at once.
+- Recommended extensions (Black Formatter, Ruff) give format-on-save and
+  lint fixes for the backend. "Run Task" also has "Backend: format
+  (black)" and "Backend: lint (ruff)" for running them manually.
+
+## Deployment
+
+Deployed to a Raspberry Pi 5, backend as a systemd service serving the
+frontend's build via FastAPI's `StaticFiles`, Chromium in kiosk mode on
+the touchscreen. Setup/redeploy steps are in `deploy/README.md`,
+trade-offs behind them in `docs/decisions/0002-pi-deployment.md`.
 
 ## Status
 
 MVP (manual inventory tracking) works end to end, backend covered by
-pytest. Not yet done: input validation, deployment to the Pi. Planned
-later: expiry warnings, barcode scanning, importing items by scanning a
-supermarket receipt.
+pytest, deployed to the Pi and running in kiosk mode. Not yet done: input
+validation, frontend tests. Planned later: expiry warnings, barcode
+scanning, importing items by scanning a supermarket receipt.
