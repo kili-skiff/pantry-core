@@ -1,6 +1,47 @@
 from app import open_food_facts
 
 
+def _add_product(client, monkeypatch, barcode, name, category=None):
+    monkeypatch.setattr(
+        open_food_facts,
+        "lookup",
+        lambda b: open_food_facts.LookupResult(name=name, category=category),
+    )
+    client.get(f"/products/{barcode}")
+
+
+def test_search_products_matches_by_partial_name_case_insensitively(
+    client, monkeypatch
+):
+    _add_product(client, monkeypatch, "1", "Oat Milk", "Dairy")
+    _add_product(client, monkeypatch, "2", "Whole Milk", "Dairy")
+    _add_product(client, monkeypatch, "3", "Bread", "Bakery")
+
+    response = client.get("/products", params={"q": "milk"})
+
+    assert response.status_code == 200
+    names = {p["name"] for p in response.json()}
+    assert names == {"Oat Milk", "Whole Milk"}
+
+
+def test_search_products_blank_query_returns_nothing(client, monkeypatch):
+    _add_product(client, monkeypatch, "1", "Oat Milk")
+
+    response = client.get("/products", params={"q": "  "})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_search_products_no_match_returns_empty_list(client, monkeypatch):
+    _add_product(client, monkeypatch, "1", "Oat Milk")
+
+    response = client.get("/products", params={"q": "nonexistent"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_get_product_looks_up_and_caches(client, monkeypatch):
     calls = []
 

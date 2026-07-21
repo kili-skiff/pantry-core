@@ -58,6 +58,20 @@ def list_items(db: Session = Depends(get_db)):
     return db.query(models.InventoryItem).order_by(models.InventoryItem.id).all()
 
 
+@app.get("/products", response_model=list[schemas.ProductRead])
+def search_products(q: str, db: Session = Depends(get_db)):
+    query = q.strip()
+    if not query:
+        return []
+    return (
+        db.query(models.Product)
+        .filter(models.Product.name.ilike(f"%{query}%"))
+        .order_by(models.Product.name)
+        .limit(10)
+        .all()
+    )
+
+
 @app.get("/products/{barcode}", response_model=schemas.ProductRead)
 def get_product(barcode: str, db: Session = Depends(get_db)):
     product = db.query(models.Product).filter_by(barcode=barcode).first()

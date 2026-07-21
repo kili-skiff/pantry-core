@@ -1,6 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { createItem, deleteItem, fetchItems, lookupProduct, updateItem } from './api'
-import type { InventoryItem } from './types'
+import {
+  createItem,
+  deleteItem,
+  fetchItems,
+  lookupProduct,
+  searchProducts,
+  updateItem,
+} from './api'
+import type { InventoryItem, Product } from './types'
 import './App.css'
 
 // @zxing/library is large and only needed once someone actually scans -
@@ -81,6 +88,7 @@ function App() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [form, setForm] = useState(emptyForm)
   const [productId, setProductId] = useState<number | null>(null)
+  const [suggestions, setSuggestions] = useState<Product[]>([])
   const [scanning, setScanning] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
@@ -109,6 +117,47 @@ function App() {
   }
 
   useEffect(loadItems, [])
+
+  // Debounced name search for autocomplete - skipped once a product is
+  // already tied to the form (e.g. right after a barcode scan prefilled it),
+  // since there's nothing left to suggest at that point.
+  useEffect(() => {
+    if (!formOpen || productId !== null) {
+      setSuggestions([])
+      return
+    }
+    const query = form.name.trim()
+    if (query.length < 2) {
+      setSuggestions([])
+      return
+    }
+    let cancelled = false
+    const timer = setTimeout(() => {
+      searchProducts(query).then(
+        (results) => {
+          if (!cancelled) setSuggestions(results)
+        },
+        () => {
+          if (!cancelled) setSuggestions([])
+        },
+      )
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [form.name, formOpen, productId])
+
+  function selectSuggestion(product: Product) {
+    setProductId(product.id)
+    setForm((prev) => ({
+      ...prev,
+      name: product.name,
+      category: product.category ?? '',
+      unit: product.default_unit ?? prev.unit,
+    }))
+    setSuggestions([])
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -544,7 +593,14 @@ function App() {
                 <input
                   placeholder="Name"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value })
+                    // Editing the name after a scan/suggestion picked a
+                    // product means that link is stale now - drop it so
+                    // autocomplete can search again and the item doesn't
+                    // get submitted tied to the wrong product.
+                    if (productId !== null) setProductId(null)
+                  }}
                 />
                 <button
                   type="button"
@@ -557,6 +613,18 @@ function App() {
                     <path d="M7 8v8M10 8v8M13 8v8M16 8v8" />
                   </svg>
                 </button>
+                {suggestions.length > 0 && (
+                  <ul className="autocomplete-list">
+                    {suggestions.map((product) => (
+                      <li key={product.id}>
+                        <button type="button" onClick={() => selectSuggestion(product)}>
+                          <span>{product.name}</span>
+                          {product.category && <span className="pill">{product.category}</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <input
                 placeholder="Category (optional)"
