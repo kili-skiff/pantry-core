@@ -222,6 +222,28 @@ describe('dashboard', () => {
   })
 })
 
+describe('all items search', () => {
+  it('filters the all-items list by name', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems).mockResolvedValue([
+      { ...baseItem, id: 1, name: 'Milk' },
+      { ...baseItem, id: 2, name: 'Bread' },
+    ])
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show all items' }))
+
+    expect(await screen.findByText('Milk')).toBeInTheDocument()
+    expect(screen.getByText('Bread')).toBeInTheDocument()
+
+    await user.type(screen.getByPlaceholderText('Search items...'), 'mil')
+
+    expect(screen.getByText('Milk')).toBeInTheDocument()
+    expect(screen.queryByText('Bread')).not.toBeInTheDocument()
+  })
+})
+
 describe('product catalog', () => {
   async function goToProductsView(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))

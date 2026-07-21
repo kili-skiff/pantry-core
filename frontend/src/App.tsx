@@ -117,6 +117,7 @@ function App() {
   const [formOpen, setFormOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
+  const [itemsQuery, setItemsQuery] = useState('')
   const [fabExpanded, setFabExpanded] = useState(false)
   const [view, setView] = useState<View>('dashboard')
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
@@ -371,6 +372,11 @@ function App() {
     scanning
 
   const allItemsSorted = [...items].sort((a, b) => a.name.localeCompare(b.name))
+  const visibleItems = itemsQuery.trim()
+    ? allItemsSorted.filter((item) =>
+        item.name.toLowerCase().includes(itemsQuery.trim().toLowerCase()),
+      )
+    : allItemsSorted
 
   return (
     <main className="app">
@@ -399,27 +405,35 @@ function App() {
         <div className="all-items-page">
           <section className="board-column">
             <h2 className="board-title">All items</h2>
+            <input
+              className="search-bar"
+              placeholder="Search items..."
+              value={itemsQuery}
+              onChange={(e) => setItemsQuery(e.target.value)}
+            />
             <ul className="all-items-list">
-              {allItemsSorted
-                .map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className="all-items-row"
-                      onClick={() => setSelectedItem(item)}
-                    >
-                      <span className="item-tile-name">{item.name}</span>
-                      <span className="item-tile-meta">
-                        {item.quantity} {item.unit}
-                      </span>
-                      {item.category && <span className="pill">{item.category}</span>}
-                      {item.expiry_date && (
-                        <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
+              {visibleItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="all-items-row"
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <span className="item-tile-name">{item.name}</span>
+                    <span className="item-tile-meta">
+                      {item.quantity} {item.unit}
+                    </span>
+                    {item.category && <span className="pill">{item.category}</span>}
+                    {item.expiry_date && (
+                      <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
               {items.length === 0 && <li className="empty-hint">No items yet.</li>}
+              {items.length > 0 && visibleItems.length === 0 && (
+                <li className="empty-hint">No items match "{itemsQuery}".</li>
+              )}
             </ul>
           </section>
         </div>
