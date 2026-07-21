@@ -60,7 +60,12 @@ describe('add-item form', () => {
 
   it('creates the item with the entered values and resets the form', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.createItem).mockResolvedValue({ ...baseItem, id: 2, name: 'Eggs', quantity: 6 })
+    const created = { ...baseItem, id: 2, name: 'Eggs', quantity: 6 }
+    vi.mocked(api.createItem).mockResolvedValue(created)
+    // First call is the initial mount, second is the reload after a
+    // successful create - that's when "Eggs" should show up in the
+    // dashboard's "All items" column.
+    vi.mocked(api.fetchItems).mockResolvedValueOnce([]).mockResolvedValueOnce([created])
     render(<App />)
     await openAddForm(user)
 
@@ -194,6 +199,26 @@ describe('item list loading', () => {
     await waitFor(() =>
       expect(screen.queryByText('Failed to delete item')).not.toBeInTheDocument(),
     )
+  })
+})
+
+describe('dashboard', () => {
+  it('shows all items directly and keeps recent activity in a separate panel', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems).mockResolvedValue([baseItem])
+    render(<App />)
+
+    expect(await screen.findByText('Milk')).toBeInTheDocument()
+    expect(screen.queryByText('Added recently')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show recent activity' }))
+
+    expect(screen.getByText('Added recently')).toBeInTheDocument()
+    expect(screen.getByText('Removed recently')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Added recently')).not.toBeInTheDocument()
   })
 })
 

@@ -116,6 +116,7 @@ function App() {
   const [scanning, setScanning] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
   const [fabExpanded, setFabExpanded] = useState(false)
   const [view, setView] = useState<View>('dashboard')
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
@@ -362,7 +363,14 @@ function App() {
   const dateLabel = now.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' })
 
   const overlayOpen =
-    formOpen || removeOpen || selectedItem !== null || selectedProduct !== null || scanning
+    formOpen ||
+    removeOpen ||
+    activityOpen ||
+    selectedItem !== null ||
+    selectedProduct !== null ||
+    scanning
+
+  const allItemsSorted = [...items].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <main className="app">
@@ -392,8 +400,7 @@ function App() {
           <section className="board-column">
             <h2 className="board-title">All items</h2>
             <ul className="all-items-list">
-              {[...items]
-                .sort((a, b) => a.name.localeCompare(b.name))
+              {allItemsSorted
                 .map((item) => (
                   <li key={item.id}>
                     <button
@@ -493,46 +500,90 @@ function App() {
             </div>
           </section>
 
-          <section className="board-column board-activity">
-            <div className="activity-block">
-              <h2 className="board-title">Added recently</h2>
-              <ul className="activity-list">
-                {addedRecent.map((entry) => (
-                  <li key={entry.id}>
-                    <span>{entry.item.name}</span>
-                    <div className="activity-actions">
-                      <button type="button" onClick={() => editAddedEntry(entry)}>
-                        edit
-                      </button>
-                      <button type="button" onClick={() => undoAdd(entry)}>
-                        undo
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                {addedRecent.length === 0 && <li className="empty-hint">-</li>}
-              </ul>
-            </div>
-            <div className="activity-block">
-              <h2 className="board-title">Removed recently</h2>
-              <ul className="activity-list">
-                {removedRecent.map((entry) => (
-                  <li key={entry.id}>
-                    <span>{entry.item.name}</span>
-                    <div className="activity-actions">
-                      <button type="button" onClick={() => editRemovedEntry(entry)}>
-                        edit
-                      </button>
-                      <button type="button" onClick={() => undoRemove(entry)}>
-                        undo
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                {removedRecent.length === 0 && <li className="empty-hint">-</li>}
-              </ul>
+          <section className="board-column">
+            <h2 className="board-title">All items</h2>
+            <div className="item-grid">
+              {allItemsSorted.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="item-tile"
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
+                  <span className="item-tile-name">{item.name}</span>
+                  <span className="item-tile-meta">
+                    {item.quantity} {item.unit}
+                  </span>
+                  {item.expiry_date && (
+                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                  )}
+                </button>
+              ))}
+              {items.length === 0 && <p className="empty-hint">No items yet.</p>}
             </div>
           </section>
+        </div>
+      )}
+
+      {activityOpen && (
+        <div className="add-overlay" onClick={() => setActivityOpen(false)}>
+          <div className="add-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="add-panel-header">
+              <h2>Recent activity</h2>
+              <button
+                type="button"
+                className="add-panel-close"
+                aria-label="Close"
+                onClick={() => setActivityOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="board-activity">
+              <div className="activity-block">
+                <h2 className="board-title">Added recently</h2>
+                <ul className="activity-list">
+                  {addedRecent.map((entry) => (
+                    <li key={entry.id}>
+                      <span>{entry.item.name}</span>
+                      <div className="activity-actions">
+                        <button type="button" onClick={() => editAddedEntry(entry)}>
+                          edit
+                        </button>
+                        <button type="button" onClick={() => undoAdd(entry)}>
+                          undo
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                  {addedRecent.length === 0 && <li className="empty-hint">-</li>}
+                </ul>
+              </div>
+              <div className="activity-block">
+                <h2 className="board-title">Removed recently</h2>
+                <ul className="activity-list">
+                  {removedRecent.map((entry) => (
+                    <li key={entry.id}>
+                      <span>{entry.item.name}</span>
+                      <div className="activity-actions">
+                        <button type="button" onClick={() => editRemovedEntry(entry)}>
+                          edit
+                        </button>
+                        <button type="button" onClick={() => undoRemove(entry)}>
+                          undo
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                  {removedRecent.length === 0 && <li className="empty-hint">-</li>}
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -904,6 +955,20 @@ function App() {
                     <path d="M3 6h.01M3 12h.01M3 18h.01" />
                   </svg>
                 )}
+              </button>
+              <button
+                type="button"
+                className="fab fab-mini fab-pop"
+                aria-label="Show recent activity"
+                onClick={() => {
+                  setActivityOpen(true)
+                  setFabExpanded(false)
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 3" />
+                </svg>
               </button>
             </>
           )}
