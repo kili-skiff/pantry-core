@@ -3,9 +3,11 @@ import {
   createItem,
   deleteItem,
   fetchItems,
+  fetchProducts,
   lookupProduct,
   searchProducts,
   updateItem,
+  updateProduct,
 } from './api'
 import type { InventoryItem, Product } from './types'
 import './App.css'
@@ -84,6 +86,13 @@ function groupByCategory(items: InventoryItem[]): [string, InventoryItem[]][] {
   return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
 }
 
+type View = 'dashboard' | 'all-items' | 'products'
+const VIEW_ORDER: View[] = ['dashboard', 'all-items', 'products']
+
+function nextView(current: View): View {
+  return VIEW_ORDER[(VIEW_ORDER.indexOf(current) + 1) % VIEW_ORDER.length]
+}
+
 function App() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [form, setForm] = useState(emptyForm)
@@ -93,8 +102,11 @@ function App() {
   const [formOpen, setFormOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
   const [fabExpanded, setFabExpanded] = useState(false)
-  const [view, setView] = useState<'dashboard' | 'all-items'>('dashboard')
+  const [view, setView] = useState<View>('dashboard')
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [productForm, setProductForm] = useState({ name: '', category: '', default_unit: '' })
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState(getInitialTheme)
@@ -120,6 +132,41 @@ function App() {
   }
 
   useEffect(loadItems, [])
+
+  function loadProducts() {
+    fetchProducts()
+      .then(setProducts)
+      .catch(() => setError('Could not load products from backend.'))
+  }
+
+  useEffect(loadProducts, [])
+
+  function openProduct(product: Product) {
+    setSelectedProduct(product)
+    setProductForm({
+      name: product.name,
+      category: product.category ?? '',
+      default_unit: product.default_unit ?? '',
+    })
+  }
+
+  async function handleUpdateProduct(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedProduct || !productForm.name) return
+
+    try {
+      const updated = await updateProduct(selectedProduct.id, {
+        name: productForm.name,
+        category: productForm.category || null,
+        default_unit: productForm.default_unit || null,
+      })
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+      setSelectedProduct(null)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update product.')
+    }
+  }
 
   // Debounced name search for autocomplete - skipped once a product is
   // already tied to the form (e.g. right after a barcode scan prefilled it),
@@ -299,7 +346,8 @@ function App() {
   const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateLabel = now.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' })
 
-  const overlayOpen = formOpen || removeOpen || selectedItem !== null || scanning
+  const overlayOpen =
+    formOpen || removeOpen || selectedItem !== null || selectedProduct !== null || scanning
 
   return (
     <main className="app">
@@ -350,6 +398,33 @@ function App() {
                   </li>
                 ))}
               {items.length === 0 && <li className="empty-hint">No items yet.</li>}
+            </ul>
+          </section>
+        </div>
+      ) : view === 'products' ? (
+        <div className="all-items-page">
+          <section className="board-column">
+            <h2 className="board-title">Products</h2>
+            <ul className="all-items-list">
+              {[...products]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((product) => (
+                  <li key={product.id}>
+                    <button
+                      type="button"
+                      className="all-items-row"
+                      onClick={() => openProduct(product)}
+                    >
+                      <span className="item-tile-name">{product.name}</span>
+                      {product.category && <span className="pill">{product.category}</span>}
+                      {product.default_unit && (
+                        <span className="item-tile-meta">{product.default_unit}</span>
+                      )}
+                      <span className="pill">{product.barcode ? product.barcode : 'no barcode'}</span>
+                    </button>
+                  </li>
+                ))}
+              {products.length === 0 && <li className="empty-hint">No products yet.</li>}
             </ul>
           </section>
         </div>
@@ -529,6 +604,57 @@ function App() {
             >
               Remove item
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedProduct && (
+        <div className="add-overlay" onClick={() => setSelectedProduct(null)}>
+          <div className="add-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="add-panel-header">
+              <h2>Edit product</h2>
+              <button
+                type="button"
+                className="add-panel-close"
+                aria-label="Close"
+                onClick={() => setSelectedProduct(null)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="item-detail-pills">
+              <span className="pill">
+                {selectedProduct.barcode ? selectedProduct.barcode : 'no barcode'}
+              </span>
+            </div>
+
+            <form className="add-form" onSubmit={handleUpdateProduct}>
+              <input
+                placeholder="Name"
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+              />
+              <input
+                placeholder="Category (optional)"
+                value={productForm.category}
+                onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+              />
+              <select
+                value={productForm.default_unit}
+                onChange={(e) => setProductForm({ ...productForm, default_unit: e.target.value })}
+              >
+                <option value="">No default unit</option>
+                {UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <button type="submit">Save</button>
+            </form>
           </div>
         </div>
       )}
@@ -723,18 +849,29 @@ function App() {
               <button
                 type="button"
                 className="fab fab-mini fab-pop"
-                aria-label={view === 'all-items' ? 'Back to dashboard' : 'Show all items'}
+                aria-label={
+                  view === 'dashboard'
+                    ? 'Show all items'
+                    : view === 'all-items'
+                      ? 'Show products'
+                      : 'Back to dashboard'
+                }
                 onClick={() => {
-                  setView((v) => (v === 'all-items' ? 'dashboard' : 'all-items'))
+                  setView(nextView(view))
                   setFabExpanded(false)
                 }}
               >
-                {view === 'all-items' ? (
+                {view === 'dashboard' ? (
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="7" height="7" rx="1" />
                     <rect x="14" y="3" width="7" height="7" rx="1" />
                     <rect x="3" y="14" width="7" height="7" rx="1" />
                     <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                ) : view === 'all-items' ? (
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 12.5l-7.5 7.5L4 11.5V4h7.5l8.5 8.5z" />
+                    <circle cx="8" cy="8" r="1.5" />
                   </svg>
                 ) : (
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

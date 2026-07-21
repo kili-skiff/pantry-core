@@ -32,6 +32,7 @@ const baseItem: InventoryItem = {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(api.fetchItems).mockResolvedValue([])
+  vi.mocked(api.fetchProducts).mockResolvedValue([])
   vi.mocked(api.searchProducts).mockResolvedValue([])
 })
 
@@ -192,6 +193,49 @@ describe('item list loading', () => {
 
     await waitFor(() =>
       expect(screen.queryByText('Failed to delete item')).not.toBeInTheDocument(),
+    )
+  })
+})
+
+describe('product catalog', () => {
+  async function goToProductsView(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show all items' }))
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show products' }))
+  }
+
+  it('lists products and saves an edit', async () => {
+    const user = userEvent.setup()
+    const product: Product = {
+      id: 3,
+      barcode: null,
+      name: 'milch',
+      category: null,
+      default_unit: null,
+    }
+    vi.mocked(api.fetchProducts).mockResolvedValue([product])
+    vi.mocked(api.updateProduct).mockResolvedValue({
+      ...product,
+      name: 'Milch',
+      category: 'Dairy',
+      default_unit: 'l',
+    })
+    render(<App />)
+    await goToProductsView(user)
+
+    await user.click(await screen.findByRole('button', { name: /milch/i }))
+
+    const nameInput = screen.getByPlaceholderText('Name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Milch')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(api.updateProduct).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ name: 'Milch' }),
+      ),
     )
   })
 })

@@ -1,4 +1,10 @@
-import type { InventoryItem, InventoryItemInput, InventoryItemUpdate, Product } from './types'
+import type {
+  InventoryItem,
+  InventoryItemInput,
+  InventoryItemUpdate,
+  Product,
+  ProductUpdate,
+} from './types'
 
 // Dev-Server (:5173) und Backend (:8000) laufen getrennt, brauchen also die
 // volle URL. Im Production-Build liefert FastAPI Frontend und API von
@@ -60,6 +66,22 @@ export async function deleteItem(id: number): Promise<void> {
 export async function searchProducts(query: string): Promise<Product[]> {
   const res = await fetch(`${API_BASE}/products?${new URLSearchParams({ q: query })}`)
   if (!res.ok) throw new Error(await errorMessage(res, 'Failed to search products'))
+  return res.json()
+}
+
+export async function fetchProducts(): Promise<Product[]> {
+  const res = await fetch(`${API_BASE}/products`)
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to load products'))
+  return res.json()
+}
+
+export async function updateProduct(id: number, input: ProductUpdate): Promise<Product> {
+  const res = await fetch(`${API_BASE}/products/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to update product'))
   return res.json()
 }
 

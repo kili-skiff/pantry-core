@@ -59,17 +59,29 @@ def list_items(db: Session = Depends(get_db)):
 
 
 @app.get("/products", response_model=list[schemas.ProductRead])
-def search_products(q: str, db: Session = Depends(get_db)):
+def search_products(q: str = "", db: Session = Depends(get_db)):
     query = q.strip()
+    products = db.query(models.Product).order_by(models.Product.name)
     if not query:
-        return []
-    return (
-        db.query(models.Product)
-        .filter(models.Product.name.ilike(f"%{query}%"))
-        .order_by(models.Product.name)
-        .limit(10)
-        .all()
-    )
+        # No search term - list the whole catalog (for the product
+        # management view), not capped like the autocomplete results below.
+        return products.all()
+    return products.filter(models.Product.name.ilike(f"%{query}%")).limit(10).all()
+
+
+@app.patch("/products/{product_id}", response_model=schemas.ProductRead)
+def update_product(
+    product_id: int, payload: schemas.ProductUpdate, db: Session = Depends(get_db)
+):
+    product = db.get(models.Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.name = payload.name
+    product.category = payload.category
+    product.default_unit = payload.default_unit
+    db.commit()
+    db.refresh(product)
+    return product
 
 
 @app.get("/products/{barcode}", response_model=schemas.ProductRead)

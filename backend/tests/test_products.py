@@ -24,13 +24,21 @@ def test_search_products_matches_by_partial_name_case_insensitively(
     assert names == {"Oat Milk", "Whole Milk"}
 
 
-def test_search_products_blank_query_returns_nothing(client, monkeypatch):
+def test_search_products_blank_query_lists_the_whole_catalog(client, monkeypatch):
     _add_product(client, monkeypatch, "1", "Oat Milk")
+    _add_product(client, monkeypatch, "2", "Bread")
 
     response = client.get("/products", params={"q": "  "})
 
     assert response.status_code == 200
-    assert response.json() == []
+    names = {p["name"] for p in response.json()}
+    assert names == {"Oat Milk", "Bread"}
+
+    # Same behaviour with no q param at all - used by the product catalog
+    # view to list everything.
+    response = client.get("/products")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
 
 
 def test_search_products_no_match_returns_empty_list(client, monkeypatch):
@@ -69,3 +77,32 @@ def test_get_product_not_found(client, monkeypatch):
 
     response = client.get("/products/0000000000000")
     assert response.status_code == 404
+
+
+def test_update_product(client, monkeypatch):
+    _add_product(client, monkeypatch, "1", "milch")
+    product_id = client.get("/products", params={"q": "milch"}).json()[0]["id"]
+
+    response = client.patch(
+        f"/products/{product_id}",
+        json={"name": "Milch", "category": "Dairy", "default_unit": "l"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Milch"
+    assert body["category"] == "Dairy"
+    assert body["default_unit"] == "l"
+
+
+def test_update_product_not_found(client):
+    response = client.patch("/products/999", json={"name": "Milch"})
+    assert response.status_code == 404
+
+
+def test_update_product_rejects_blank_name(client, monkeypatch):
+    _add_product(client, monkeypatch, "1", "Milch")
+    product_id = client.get("/products", params={"q": "milch"}).json()[0]["id"]
+
+    response = client.patch(f"/products/{product_id}", json={"name": "   "})
+    assert response.status_code == 422
