@@ -65,10 +65,74 @@ const CATEGORY_ICONS: Record<string, string> = {
   Spices: '🧂',
   Pantry: '🥫',
   Beverages: '☕',
+  Meat: '🥩',
+  Vegan: '🌱',
+}
+
+// Category-level icons are too coarse once there's more than a couple of
+// items per category (Kartoffeln and Karotten both just showed a carrot) -
+// this covers the seeded staples by name, falling back to the category
+// icon for anything not listed here (e.g. freshly scanned products).
+const PRODUCT_ICONS: Record<string, string> = {
+  milch: '🥛',
+  butter: '🧈',
+  eier: '🥚',
+  käse: '🧀',
+  bergkäse: '🧀',
+  joghurt: '🥣',
+  quark: '🥣',
+  sahne: '🥛',
+  brot: '🍞',
+  brötchen: '🥐',
+  toastbrot: '🍞',
+  brezel: '🥨',
+  reis: '🍚',
+  nudeln: '🍝',
+  spätzle: '🍝',
+  haferflocken: '🌾',
+  salz: '🧂',
+  kartoffeln: '🥔',
+  zwiebeln: '🧅',
+  knoblauch: '🧄',
+  tomaten: '🍅',
+  äpfel: '🍎',
+  bananen: '🍌',
+  karotten: '🥕',
+  zitronen: '🍋',
+  gurken: '🥒',
+  zucchini: '🥒',
+  paprika: '🫑',
+  pilze: '🍄',
+  spinat: '🥬',
+  salat: '🥬',
+  sauerkraut: '🥬',
+  radieschen: '🥕',
+  zwetschgen: '🍑',
+  birnen: '🍐',
+  trauben: '🍇',
+  olivenöl: '🫒',
+  honig: '🍯',
+  bier: '🍺',
+  apfelschorle: '🧃',
+  kaffee: '☕',
+  tee: '🍵',
+  speck: '🥓',
+  'weißwürste': '🌭',
+  'wiener würstchen': '🌭',
+  kokosmilch: '🥥',
+  hafermilch: '🥛',
+  sojamilch: '🥛',
+  mandelmilch: '🥛',
+  'veganer käse': '🧀',
+  erdnussbutter: '🥜',
 }
 
 function categoryIcon(category: string | null): string {
   return (category && CATEGORY_ICONS[category]) || '📦'
+}
+
+function itemIcon(name: string, category: string | null): string {
+  return PRODUCT_ICONS[name.trim().toLowerCase()] ?? categoryIcon(category)
 }
 
 function expiryLabel(dateStr: string): string {
@@ -490,7 +554,7 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
-                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
@@ -514,7 +578,7 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
-                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
@@ -538,7 +602,7 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
-                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
