@@ -12,14 +12,10 @@ done
 
 # On-screen keyboard for the touchscreen. Used to run alongside a minimal
 # wf-panel-pi instance just for a manual toggle button (permanently visible
-# bottom bar) - trying plain auto-show-on-focus instead, which needs no
-# permanent panel at all. squeekboard registers as the Wayland input method
-# either way; this isn't a special "auto" mode, just not also running the
-# panel that provided the manual toggle. UNVERIFIED on real hardware yet -
-# depends on Chromium's Wayland text-input-v3 support actually signaling
-# focus to squeekboard. If it doesn't show up on a text field: bring back
-# `wf-panel-pi -c ~/.config/wf-panel-pi/wf-panel-pi.ini &` (see git history
-# for deploy/wf-panel-pi.ini) as the fallback.
+# bottom bar) - confirmed on real hardware that plain auto-show-on-focus
+# works without it: squeekboard registers as the Wayland input method and
+# Chromium's Wayland text-input-v3 support signals focus to it correctly,
+# so no permanent panel is needed at all.
 squeekboard &
 
 # No --kiosk: that forces a true Wayland fullscreen surface, which on
