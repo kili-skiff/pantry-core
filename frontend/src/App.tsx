@@ -166,11 +166,6 @@ function groupByCategory(items: InventoryItem[]): [string, InventoryItem[]][] {
 }
 
 type View = 'dashboard' | 'all-items' | 'products'
-const VIEW_ORDER: View[] = ['dashboard', 'all-items', 'products']
-
-function nextView(current: View): View {
-  return VIEW_ORDER[(VIEW_ORDER.indexOf(current) + 1) % VIEW_ORDER.length]
-}
 
 function App() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -1017,36 +1012,30 @@ function App() {
               <button
                 type="button"
                 className="fab fab-mini fab-pop"
-                aria-label={
-                  view === 'dashboard'
-                    ? 'Show all items'
-                    : view === 'all-items'
-                      ? 'Show products'
-                      : 'Back to dashboard'
-                }
+                aria-label="Show all items"
                 onClick={() => {
-                  setView(nextView(view))
+                  setView('all-items')
                   setFabExpanded(false)
                 }}
               >
-                {view === 'dashboard' ? (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" />
-                  </svg>
-                ) : view === 'all-items' ? (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 12.5l-7.5 7.5L4 11.5V4h7.5l8.5 8.5z" />
-                    <circle cx="8" cy="8" r="1.5" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M8 6h13M8 12h13M8 18h13" />
-                    <path d="M3 6h.01M3 12h.01M3 18h.01" />
-                  </svg>
-                )}
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M8 6h13M8 12h13M8 18h13" />
+                  <path d="M3 6h.01M3 12h.01M3 18h.01" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="fab fab-mini fab-pop"
+                aria-label="Show products"
+                onClick={() => {
+                  setView('products')
+                  setFabExpanded(false)
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 12.5l-7.5 7.5L4 11.5V4h7.5l8.5 8.5z" />
+                  <circle cx="8" cy="8" r="1.5" />
+                </svg>
               </button>
               <button
                 type="button"
