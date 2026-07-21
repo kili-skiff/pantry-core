@@ -405,12 +405,26 @@ function App() {
         <div className="all-items-page">
           <section className="board-column">
             <h2 className="board-title">All items</h2>
-            <input
-              className="search-bar"
-              placeholder="Search items..."
-              value={itemsQuery}
-              onChange={(e) => setItemsQuery(e.target.value)}
-            />
+            <div className="search-field">
+              <input
+                className="search-bar"
+                placeholder="Search items..."
+                value={itemsQuery}
+                onChange={(e) => setItemsQuery(e.target.value)}
+              />
+              {itemsQuery && (
+                <button
+                  type="button"
+                  className="search-clear"
+                  aria-label="Clear search"
+                  onClick={() => setItemsQuery('')}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <ul className="all-items-list">
               {visibleItems.map((item) => (
                 <li key={item.id}>
