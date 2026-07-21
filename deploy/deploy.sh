@@ -38,6 +38,7 @@ cd ~/pantry-core/backend
 python3 -m venv .venv
 .venv/bin/pip install -q -r requirements.txt
 .venv/bin/alembic upgrade head
+.venv/bin/python -m app.seed_products
 REMOTE
 
 echo "==> Restarting service"
