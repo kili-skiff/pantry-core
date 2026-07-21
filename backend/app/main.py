@@ -61,6 +61,21 @@ def get_product(barcode: str, db: Session = Depends(get_db)):
     return product
 
 
+@app.patch("/items/{item_id}", response_model=schemas.InventoryItemRead)
+def update_item(
+    item_id: int, payload: schemas.InventoryItemUpdate, db: Session = Depends(get_db)
+):
+    item = db.get(models.InventoryItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item.quantity = payload.quantity
+    item.expiry_date = payload.expiry_date
+    item.min_quantity = payload.min_quantity
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 @app.delete("/items/{item_id}", status_code=204)
 def delete_item(item_id: int, db: Session = Depends(get_db)):
     item = db.get(models.InventoryItem, item_id)

@@ -8,6 +8,7 @@ export interface InventoryItem {
   quantity: number
   unit: string
   expiry_date: string | null
+  min_quantity: number | null
   added_at: string
   source: Source
 }
@@ -18,7 +19,14 @@ export interface InventoryItemInput {
   quantity: number
   unit: string
   expiry_date: string | null
+  min_quantity?: number | null
   product_id?: number | null
+}
+
+export interface InventoryItemUpdate {
+  quantity: number
+  expiry_date: string | null
+  min_quantity: number | null
 }
 
 export interface Product {

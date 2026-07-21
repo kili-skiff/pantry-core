@@ -114,3 +114,48 @@ def test_create_item_rejects_unknown_product_id(client):
         "/items", json={"name": "Milk", "quantity": 1, "unit": "l", "product_id": 999}
     )
     assert response.status_code == 404
+
+
+def test_update_item_quantity(client):
+    create_response = client.post(
+        "/items", json={"name": "Milk", "quantity": 1, "unit": "l"}
+    )
+    item_id = create_response.json()["id"]
+
+    response = client.patch(f"/items/{item_id}", json={"quantity": 2})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["quantity"] == 2
+    assert body["expiry_date"] is None
+    assert body["min_quantity"] is None
+
+
+def test_update_item_sets_expiry_and_min_quantity(client):
+    create_response = client.post(
+        "/items", json={"name": "Milk", "quantity": 1, "unit": "l"}
+    )
+    item_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/items/{item_id}",
+        json={"quantity": 1, "expiry_date": "2026-09-01", "min_quantity": 2},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["expiry_date"] == "2026-09-01"
+    assert body["min_quantity"] == 2
+
+
+def test_update_item_not_found(client):
+    response = client.patch("/items/999", json={"quantity": 1})
+    assert response.status_code == 404
+
+
+def test_update_item_rejects_non_positive_quantity(client):
+    create_response = client.post(
+        "/items", json={"name": "Milk", "quantity": 1, "unit": "l"}
+    )
+    item_id = create_response.json()["id"]
+
+    response = client.patch(f"/items/{item_id}", json={"quantity": 0})
+    assert response.status_code == 422
