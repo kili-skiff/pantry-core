@@ -45,7 +45,7 @@ class ProductRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    barcode: str
+    barcode: str | None = None
     name: str
     category: str | None = None
     default_unit: str | None = None
