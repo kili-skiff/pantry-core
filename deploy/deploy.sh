@@ -23,6 +23,7 @@ echo "==> Building frontend"
 echo "==> Syncing backend"
 rsync -avz --delete \
   --exclude '.venv' --exclude '__pycache__' --exclude '*.db' --exclude '.pytest_cache' \
+  --exclude '.ruff_cache' \
   -e "${SSH}" \
   "${SCRIPT_DIR}/backend/" "${PI_TARGET}:${REMOTE_DIR}/backend/"
 
