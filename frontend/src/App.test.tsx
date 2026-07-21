@@ -168,3 +168,30 @@ describe('add-item form', () => {
     await waitFor(() => expect(api.searchProducts).toHaveBeenCalled())
   })
 })
+
+describe('item list loading', () => {
+  it('clears a stale error once a later load succeeds', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems)
+      .mockResolvedValueOnce([baseItem])
+      .mockResolvedValueOnce([])
+    vi.mocked(api.deleteItem)
+      .mockRejectedValueOnce(new Error('Failed to delete item'))
+      .mockResolvedValueOnce(undefined)
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Remove item' }))
+    await user.click(await screen.findByRole('button', { name: 'Remove' }))
+
+    expect(await screen.findByText('Failed to delete item')).toBeInTheDocument()
+
+    // Same delete succeeds this time - loadItems() runs again as a side
+    // effect and should clear the stale error from the failed attempt above.
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Failed to delete item')).not.toBeInTheDocument(),
+    )
+  })
+})

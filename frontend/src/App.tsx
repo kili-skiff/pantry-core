@@ -112,7 +112,10 @@ function App() {
 
   function loadItems() {
     fetchItems()
-      .then(setItems)
+      .then((items) => {
+        setItems(items)
+        setError(null)
+      })
       .catch(() => setError('Could not load items from backend.'))
   }
 
