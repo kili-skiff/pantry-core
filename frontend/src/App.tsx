@@ -453,9 +453,9 @@ function App() {
       ) : (
         <div className="dashboard">
           <section className="board-column">
-            <h2 className="board-title">Expiring soon</h2>
+            <h2 className="board-title">All items</h2>
             <div className="item-grid">
-              {expiringSoon.map((item) => (
+              {allItemsSorted.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -467,12 +467,12 @@ function App() {
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
                   </span>
-                  <span className="pill pill-expiry">
-                    {expiryLabel(item.expiry_date as string)}
-                  </span>
+                  {item.expiry_date && (
+                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                  )}
                 </button>
               ))}
-              {expiringSoon.length === 0 && <p className="empty-hint">Nothing expiring soon.</p>}
+              {items.length === 0 && <p className="empty-hint">No items yet.</p>}
             </div>
           </section>
 
@@ -501,9 +501,9 @@ function App() {
           </section>
 
           <section className="board-column">
-            <h2 className="board-title">All items</h2>
+            <h2 className="board-title">Expiring soon</h2>
             <div className="item-grid">
-              {allItemsSorted.map((item) => (
+              {expiringSoon.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -515,12 +515,12 @@ function App() {
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
                   </span>
-                  {item.expiry_date && (
-                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
-                  )}
+                  <span className="pill pill-expiry">
+                    {expiryLabel(item.expiry_date as string)}
+                  </span>
                 </button>
               ))}
-              {items.length === 0 && <p className="empty-hint">No items yet.</p>}
+              {expiringSoon.length === 0 && <p className="empty-hint">Nothing expiring soon.</p>}
             </div>
           </section>
         </div>
