@@ -56,6 +56,21 @@ function daysUntil(dateStr: string): number {
   return Math.round((new Date(dateStr).getTime() - today.getTime()) / 86_400_000)
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+  Dairy: '🥛',
+  Bakery: '🍞',
+  Produce: '🥕',
+  Baking: '🧁',
+  Grains: '🌾',
+  Spices: '🧂',
+  Pantry: '🥫',
+  Beverages: '☕',
+}
+
+function categoryIcon(category: string | null): string {
+  return (category && CATEGORY_ICONS[category]) || '📦'
+}
+
 function expiryLabel(dateStr: string): string {
   const days = daysUntil(dateStr)
   if (days < 0) return 'expired'
@@ -440,8 +455,14 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
+                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
-                  <span className="item-tile-meta">{expiryLabel(item.expiry_date as string)}</span>
+                  <span className="item-tile-meta">
+                    {item.quantity} {item.unit}
+                  </span>
+                  <span className="pill pill-expiry">
+                    {expiryLabel(item.expiry_date as string)}
+                  </span>
                 </button>
               ))}
               {expiringSoon.length === 0 && <p className="empty-hint">Nothing expiring soon.</p>}
@@ -458,10 +479,14 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
+                  <span className="item-tile-icon">{categoryIcon(item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
                   </span>
+                  {item.expiry_date && (
+                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                  )}
                 </button>
               ))}
               {lowStock.length === 0 && <p className="empty-hint">Nothing low on stock.</p>}

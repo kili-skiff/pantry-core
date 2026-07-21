@@ -145,6 +145,7 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
+  min-height: 6.5rem;
   padding: 0.9rem 0.5rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -158,6 +159,11 @@ h1 {
 
 .item-tile:hover {
   border-color: var(--accent);
+}
+
+.item-tile-icon {
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 .item-tile-name {
