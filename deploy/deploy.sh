@@ -23,6 +23,7 @@ echo "==> Building frontend"
 echo "==> Syncing backend"
 rsync -avz --delete \
   --exclude '.venv' --exclude '__pycache__' --exclude '*.db' --exclude '.pytest_cache' \
+  --exclude '.ruff_cache' \
   -e "${SSH}" \
   "${SCRIPT_DIR}/backend/" "${PI_TARGET}:${REMOTE_DIR}/backend/"
 
@@ -38,6 +39,7 @@ cd ~/pantry-core/backend
 python3 -m venv .venv
 .venv/bin/pip install -q -r requirements.txt
 .venv/bin/alembic upgrade head
+.venv/bin/python -m app.seed_products
 REMOTE
 
 echo "==> Restarting service"

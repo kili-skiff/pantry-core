@@ -178,3 +178,72 @@ def test_create_item_manually_creates_and_reuses_a_barcode_less_product(client):
 
     search = client.get("/products", params={"q": "milk"})
     assert len(search.json()) == 1
+
+
+def test_create_item_stacks_onto_an_existing_entry_without_expiry_date(client):
+    first = client.post("/items", json={"name": "Apfel", "quantity": 4, "unit": "kg"})
+    item_id = first.json()["id"]
+
+    second = client.post("/items", json={"name": "apfel", "quantity": 6, "unit": "kg"})
+
+    assert second.status_code == 201
+    body = second.json()
+    assert body["id"] == item_id
+    assert body["quantity"] == 10
+
+    list_response = client.get("/items")
+    assert len(list_response.json()) == 1
+
+
+def test_create_item_stacks_onto_an_existing_entry_with_the_same_expiry_date(client):
+    first = client.post(
+        "/items",
+        json={
+            "name": "Milch",
+            "quantity": 1,
+            "unit": "l",
+            "expiry_date": "2026-08-01",
+        },
+    )
+    item_id = first.json()["id"]
+
+    second = client.post(
+        "/items",
+        json={
+            "name": "Milch",
+            "quantity": 1,
+            "unit": "l",
+            "expiry_date": "2026-08-01",
+        },
+    )
+
+    assert second.status_code == 201
+    body = second.json()
+    assert body["id"] == item_id
+    assert body["quantity"] == 2
+
+
+def test_create_item_keeps_a_different_expiry_date_as_a_separate_entry(client):
+    client.post(
+        "/items",
+        json={
+            "name": "Milch",
+            "quantity": 1,
+            "unit": "l",
+            "expiry_date": "2026-08-01",
+        },
+    )
+
+    second = client.post(
+        "/items",
+        json={
+            "name": "Milch",
+            "quantity": 1,
+            "unit": "l",
+            "expiry_date": "2026-08-10",
+        },
+    )
+
+    assert second.status_code == 201
+    list_response = client.get("/items")
+    assert len(list_response.json()) == 2

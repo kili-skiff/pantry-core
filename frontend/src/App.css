@@ -406,6 +406,9 @@ h1 {
 }
 
 .autocomplete-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   position: absolute;
   top: calc(100% + 0.35rem);
   left: 0;

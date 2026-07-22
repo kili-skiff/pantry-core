@@ -19,7 +19,6 @@ up):
 4. Kiosk mode:
    ```
    scp deploy/labwc-autostart <user>@<pi-ip>:~/.config/labwc/autostart
-   scp deploy/wf-panel-pi.ini <user>@<pi-ip>:~/.config/wf-panel-pi/wf-panel-pi.ini
    scp deploy/setup-kiosk.sh <user>@<pi-ip>:/tmp/
    ssh <user>@<pi-ip> "chmod +x ~/.config/labwc/autostart /tmp/setup-kiosk.sh && /tmp/setup-kiosk.sh"
    ```

@@ -36,7 +36,7 @@ STAPLES: list[tuple[str, str, str]] = [
     ("Zwiebeln", "Produce", "kg"),
     ("Knoblauch", "Produce", "pcs"),
     ("Tomaten", "Produce", "kg"),
-    ("Äpfel", "Produce", "kg"),
+    ("Apfel", "Produce", "kg"),
     ("Bananen", "Produce", "kg"),
     ("Karotten", "Produce", "kg"),
     ("Zitronen", "Produce", "pcs"),

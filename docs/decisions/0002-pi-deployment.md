@@ -40,12 +40,11 @@ the panel layer and hides squeekboard (the on-screen keyboard) entirely
 ([labwc/labwc#2926](https://github.com/labwc/labwc/issues/2926)).
 Instead, Chromium launches with `--app=<url>` (no tabs/address bar,
 regular window) and a labwc `windowRule` in `rc.xml` maximizes it and
-turns off server-side decoration. Squeekboard isn't wired up for
-automatic show-on-focus here — it's a manual toggle button — so a
-minimal `wf-panel-pi` with just that button (`deploy/wf-panel-pi.ini`)
-runs alongside. The desktop's default autostart runs *in addition to*
-the user one, not instead of it, so `deploy/setup-kiosk.sh` disables
-those entries explicitly.
+turns off server-side decoration. squeekboard runs standalone and
+auto-shows on text field focus (confirmed working on the Pi) — no panel
+or manual toggle button needed. The desktop's default autostart runs
+*in addition to* the user one, not instead of it, so
+`deploy/setup-kiosk.sh` disables those entries explicitly.
 
 ## Consequences
 

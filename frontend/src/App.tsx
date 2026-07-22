@@ -95,7 +95,7 @@ const PRODUCT_ICONS: Record<string, string> = {
   zwiebeln: '🧅',
   knoblauch: '🧄',
   tomaten: '🍅',
-  äpfel: '🍎',
+  apfel: '🍎',
   bananen: '🍌',
   karotten: '🥕',
   zitronen: '🍋',

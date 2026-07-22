@@ -10,12 +10,13 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-# On-screen keyboard for the touchscreen. Raspberry Pi OS wires squeekboard
-# up as a manual toggle button in wf-panel-pi (widget "squeek"), not an
-# automatic show-on-focus popup, hence the minimal panel below just for
-# that button (config in deploy/wf-panel-pi.ini).
+# On-screen keyboard for the touchscreen. Used to run alongside a minimal
+# wf-panel-pi instance just for a manual toggle button (permanently visible
+# bottom bar) - confirmed on real hardware that plain auto-show-on-focus
+# works without it: squeekboard registers as the Wayland input method and
+# Chromium's Wayland text-input-v3 support signals focus to it correctly,
+# so no permanent panel is needed at all.
 squeekboard &
-wf-panel-pi -c ~/.config/wf-panel-pi/wf-panel-pi.ini &
 
 # No --kiosk: that forces a true Wayland fullscreen surface, which on
 # labwc/wlroots compositors renders above the panel layer and hides the

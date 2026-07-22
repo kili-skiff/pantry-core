@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models, open_food_facts, schemas
@@ -46,6 +47,32 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
             db.add(product)
             db.flush()
         data["product_id"] = product.id
+
+    # Stack onto an existing entry instead of adding a duplicate line, but
+    # only when that doesn't lose expiry info: same name+unit, and either no
+    # expiry date on file yet or the same one being added. A genuinely
+    # different expiry date means a different batch - keep those separate
+    # so "expiring soon" still points at the right one.
+    existing = (
+        db.query(models.InventoryItem)
+        .filter(models.InventoryItem.name.ilike(data["name"]))
+        .filter(models.InventoryItem.unit == data["unit"])
+        .filter(
+            or_(
+                models.InventoryItem.expiry_date.is_(None),
+                models.InventoryItem.expiry_date == data["expiry_date"],
+            )
+        )
+        .first()
+    )
+    if existing is not None:
+        existing.quantity += data["quantity"]
+        if existing.expiry_date is None and data["expiry_date"] is not None:
+            existing.expiry_date = data["expiry_date"]
+        db.commit()
+        db.refresh(existing)
+        return existing
+
     item = models.InventoryItem(**data)
     db.add(item)
     db.commit()
