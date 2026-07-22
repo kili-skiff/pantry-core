@@ -31,7 +31,7 @@ export interface InventoryItemUpdate {
 
 export interface Product {
   id: number
-  barcode: string
+  barcode: string | null
   name: string
   category: string | null
   default_unit: string | null

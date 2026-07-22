@@ -17,7 +17,9 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    barcode: Mapped[str] = mapped_column(String, unique=True, index=True)
+    # Nullable: products created from a manual (unscanned) item entry have no
+    # barcode - only OFF/scan-derived products do.
+    barcode: Mapped[str | None] = mapped_column(String, unique=True, index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     category: Mapped[str | None] = mapped_column(String, nullable=True)
     default_unit: Mapped[str | None] = mapped_column(String, nullable=True)

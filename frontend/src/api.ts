@@ -57,6 +57,12 @@ export async function deleteItem(id: number): Promise<void> {
   if (!res.ok) throw new Error(await errorMessage(res, 'Failed to delete item'))
 }
 
+export async function searchProducts(query: string): Promise<Product[]> {
+  const res = await fetch(`${API_BASE}/products?${new URLSearchParams({ q: query })}`)
+  if (!res.ok) throw new Error(await errorMessage(res, 'Failed to search products'))
+  return res.json()
+}
+
 // null means the barcode isn't known locally or on Open Food Facts - that's
 // an expected outcome (fall back to manual entry), not an error.
 export async function lookupProduct(barcode: string): Promise<Product | null> {

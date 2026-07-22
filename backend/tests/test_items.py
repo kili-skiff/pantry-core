@@ -159,3 +159,22 @@ def test_update_item_rejects_non_positive_quantity(client):
 
     response = client.patch(f"/items/{item_id}", json={"quantity": 0})
     assert response.status_code == 422
+
+
+def test_create_item_manually_creates_and_reuses_a_barcode_less_product(client):
+    first = client.post(
+        "/items", json={"name": "Milk", "category": "Dairy", "quantity": 1, "unit": "l"}
+    )
+    assert first.status_code == 201
+    first_body = first.json()
+    assert first_body["source"] == "manual"
+    assert first_body["product_id"] is not None
+
+    # Same name, different casing - should link to the same product instead
+    # of creating a duplicate.
+    second = client.post("/items", json={"name": "milk", "quantity": 2, "unit": "l"})
+    assert second.status_code == 201
+    assert second.json()["product_id"] == first_body["product_id"]
+
+    search = client.get("/products", params={"q": "milk"})
+    assert len(search.json()) == 1

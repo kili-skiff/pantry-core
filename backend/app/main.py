@@ -30,6 +30,22 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
         if db.get(models.Product, data["product_id"]) is None:
             raise HTTPException(status_code=404, detail="Product not found")
         data["source"] = models.Source.scanned
+    else:
+        # No product picked via scan/autocomplete - link (or start) a
+        # barcode-less product by name so this name feeds autocomplete next
+        # time, same as scanned products already do.
+        product = (
+            db.query(models.Product)
+            .filter(models.Product.name.ilike(data["name"]))
+            .first()
+        )
+        if product is None:
+            product = models.Product(
+                name=data["name"], category=data["category"], default_unit=data["unit"]
+            )
+            db.add(product)
+            db.flush()
+        data["product_id"] = product.id
     item = models.InventoryItem(**data)
     db.add(item)
     db.commit()
@@ -40,6 +56,20 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
 @app.get("/items", response_model=list[schemas.InventoryItemRead])
 def list_items(db: Session = Depends(get_db)):
     return db.query(models.InventoryItem).order_by(models.InventoryItem.id).all()
+
+
+@app.get("/products", response_model=list[schemas.ProductRead])
+def search_products(q: str, db: Session = Depends(get_db)):
+    query = q.strip()
+    if not query:
+        return []
+    return (
+        db.query(models.Product)
+        .filter(models.Product.name.ilike(f"%{query}%"))
+        .order_by(models.Product.name)
+        .limit(10)
+        .all()
+    )
 
 
 @app.get("/products/{barcode}", response_model=schemas.ProductRead)

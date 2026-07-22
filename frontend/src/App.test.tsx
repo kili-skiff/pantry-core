@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import * as api from './api'
@@ -32,6 +32,7 @@ const baseItem: InventoryItem = {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(api.fetchItems).mockResolvedValue([])
+  vi.mocked(api.searchProducts).mockResolvedValue([])
 })
 
 // The add-item panel lives behind the collapsed FAB stack - handles both the
@@ -120,5 +121,77 @@ describe('add-item form', () => {
     expect(
       await screen.findByText('No product found for barcode 4006381333931 - enter it manually.'),
     ).toBeInTheDocument()
+  })
+
+  it('shows autocomplete suggestions while typing and prefills the form on selection', async () => {
+    const user = userEvent.setup()
+    const product: Product = {
+      id: 7,
+      barcode: '4000000000000',
+      name: 'Oat Milk',
+      category: 'Dairy',
+      default_unit: 'l',
+    }
+    vi.mocked(api.searchProducts).mockResolvedValue([product])
+    render(<App />)
+    await openAddForm(user)
+
+    await user.type(screen.getByPlaceholderText('Name'), 'Oat')
+
+    const suggestion = await screen.findByRole('button', { name: /Oat Milk/ })
+    await user.click(suggestion)
+
+    expect(screen.getByPlaceholderText('Name')).toHaveValue('Oat Milk')
+    expect(screen.getByPlaceholderText('Category (optional)')).toHaveValue('Dairy')
+    expect(api.searchProducts).toHaveBeenCalledWith('Oat')
+  })
+
+  it('drops the linked product once the name is edited afterwards, so it can be searched again', async () => {
+    const user = userEvent.setup()
+    const product: Product = {
+      id: 7,
+      barcode: '4000000000000',
+      name: 'Oat Milk',
+      category: 'Dairy',
+      default_unit: 'l',
+    }
+    vi.mocked(api.searchProducts).mockResolvedValue([product])
+    render(<App />)
+    await openAddForm(user)
+
+    await user.type(screen.getByPlaceholderText('Name'), 'Oat')
+    await user.click(await screen.findByRole('button', { name: /Oat Milk/ }))
+
+    vi.mocked(api.searchProducts).mockClear()
+    await user.type(screen.getByPlaceholderText('Name'), 'x')
+
+    await waitFor(() => expect(api.searchProducts).toHaveBeenCalled())
+  })
+})
+
+describe('item list loading', () => {
+  it('clears a stale error once a later load succeeds', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems)
+      .mockResolvedValueOnce([baseItem])
+      .mockResolvedValueOnce([])
+    vi.mocked(api.deleteItem)
+      .mockRejectedValueOnce(new Error('Failed to delete item'))
+      .mockResolvedValueOnce(undefined)
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Remove item' }))
+    await user.click(await screen.findByRole('button', { name: 'Remove' }))
+
+    expect(await screen.findByText('Failed to delete item')).toBeInTheDocument()
+
+    // Same delete succeeds this time - loadItems() runs again as a side
+    // effect and should clear the stale error from the failed attempt above.
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Failed to delete item')).not.toBeInTheDocument(),
+    )
   })
 })
