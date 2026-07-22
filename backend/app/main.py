@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Path as PathParam
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import or_
@@ -120,7 +121,14 @@ def update_product(
 
 
 @app.get("/products/{barcode}", response_model=schemas.ProductRead)
-def get_product(barcode: str, db: Session = Depends(get_db)):
+def get_product(
+    # Alphanumeric (plus -/_), capped length: covers EAN/UPC/Code128 digits
+    # today and leaves room for self-printed QR labels later (see roadmap),
+    # while keeping anything shaped like a path segment or query string out
+    # of the outbound Open Food Facts request.
+    barcode: str = PathParam(pattern=r"^[A-Za-z0-9_-]{1,64}$"),
+    db: Session = Depends(get_db),
+):
     product = db.query(models.Product).filter_by(barcode=barcode).first()
     if product is not None:
         return product

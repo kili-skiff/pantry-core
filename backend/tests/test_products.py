@@ -96,6 +96,12 @@ def test_get_product_reuses_a_barcode_less_product_of_the_same_name(
     assert len(catalog) == 1
 
 
+def test_get_product_rejects_a_malformed_barcode(client):
+    response = client.get("/products/1234%3Bdrop")
+
+    assert response.status_code == 422
+
+
 def test_get_product_not_found(client, monkeypatch):
     monkeypatch.setattr(open_food_facts, "lookup", lambda barcode: None)
 
