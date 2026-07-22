@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import httpx2
 from pydantic import BaseModel, ValidationError
 
@@ -28,7 +30,7 @@ def lookup(barcode: str) -> LookupResult | None:
     """
     try:
         response = httpx2.get(
-            API_URL.format(barcode=barcode),
+            API_URL.format(barcode=quote(barcode, safe="")),
             params={"fields": "product_name,categories"},
             timeout=TIMEOUT,
         )

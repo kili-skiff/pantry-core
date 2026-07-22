@@ -6,9 +6,9 @@ import type {
   ProductUpdate,
 } from './types'
 
-// Dev-Server (:5173) und Backend (:8000) laufen getrennt, brauchen also die
-// volle URL. Im Production-Build liefert FastAPI Frontend und API von
-// derselben Origin aus, daher reicht dort ein relativer Pfad.
+// Dev server (:5173) and backend (:8000) run separately, so the dev server
+// needs the full URL. In the production build, FastAPI serves frontend and
+// API from the same origin, so a relative path is enough there.
 const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 
 // FastAPI's error body is either {detail: string} (HTTPException) or

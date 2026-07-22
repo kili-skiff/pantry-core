@@ -72,6 +72,36 @@ def test_get_product_looks_up_and_caches(client, monkeypatch):
     assert calls == ["3017620422003"]
 
 
+def test_get_product_reuses_a_barcode_less_product_of_the_same_name(
+    client, monkeypatch
+):
+    # A manual item entry already created a barcode-less "Nutella" product.
+    client.post("/items", json={"name": "Nutella", "quantity": 1, "unit": "pcs"})
+
+    monkeypatch.setattr(
+        open_food_facts,
+        "lookup",
+        lambda barcode: open_food_facts.LookupResult(
+            name="Nutella", category="Spreads"
+        ),
+    )
+    response = client.get("/products/3017620422003")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["barcode"] == "3017620422003"
+    assert body["category"] == "Spreads"
+
+    catalog = client.get("/products").json()
+    assert len(catalog) == 1
+
+
+def test_get_product_rejects_a_malformed_barcode(client):
+    response = client.get("/products/1234%3Bdrop")
+
+    assert response.status_code == 422
+
+
 def test_get_product_not_found(client, monkeypatch):
     monkeypatch.setattr(open_food_facts, "lookup", lambda barcode: None)
 
