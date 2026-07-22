@@ -49,3 +49,14 @@ class ProductRead(BaseModel):
     name: str
     category: str | None = None
     default_unit: str | None = None
+
+
+class ProductUpdate(BaseModel):
+    name: str = Field(min_length=1)
+    category: str | None = None
+    default_unit: Unit | None = None
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value

@@ -32,6 +32,7 @@ const baseItem: InventoryItem = {
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(api.fetchItems).mockResolvedValue([])
+  vi.mocked(api.fetchProducts).mockResolvedValue([])
   vi.mocked(api.searchProducts).mockResolvedValue([])
 })
 
@@ -59,7 +60,12 @@ describe('add-item form', () => {
 
   it('creates the item with the entered values and resets the form', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.createItem).mockResolvedValue({ ...baseItem, id: 2, name: 'Eggs', quantity: 6 })
+    const created = { ...baseItem, id: 2, name: 'Eggs', quantity: 6 }
+    vi.mocked(api.createItem).mockResolvedValue(created)
+    // First call is the initial mount, second is the reload after a
+    // successful create - that's when "Eggs" should show up in the
+    // dashboard's "All items" column.
+    vi.mocked(api.fetchItems).mockResolvedValueOnce([]).mockResolvedValueOnce([created])
     render(<App />)
     await openAddForm(user)
 
@@ -192,6 +198,91 @@ describe('item list loading', () => {
 
     await waitFor(() =>
       expect(screen.queryByText('Failed to delete item')).not.toBeInTheDocument(),
+    )
+  })
+})
+
+describe('dashboard', () => {
+  it('shows all items directly and keeps recent activity in a separate panel', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems).mockResolvedValue([baseItem])
+    render(<App />)
+
+    expect(await screen.findByText('Milk')).toBeInTheDocument()
+    expect(screen.queryByText('Added recently')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show recent activity' }))
+
+    expect(screen.getByText('Added recently')).toBeInTheDocument()
+    expect(screen.getByText('Removed recently')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Added recently')).not.toBeInTheDocument()
+  })
+})
+
+describe('all items search', () => {
+  it('filters the all-items list by name', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.fetchItems).mockResolvedValue([
+      { ...baseItem, id: 1, name: 'Milk' },
+      { ...baseItem, id: 2, name: 'Bread' },
+    ])
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show all items' }))
+
+    expect(await screen.findByText('Milk')).toBeInTheDocument()
+    expect(screen.getByText('Bread')).toBeInTheDocument()
+
+    await user.type(screen.getByPlaceholderText('Search items...'), 'mil')
+
+    expect(screen.getByText('Milk')).toBeInTheDocument()
+    expect(screen.queryByText('Bread')).not.toBeInTheDocument()
+  })
+})
+
+describe('product catalog', () => {
+  async function goToProductsView(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show all items' }))
+    await user.click(screen.getByRole('button', { name: /show actions|hide actions/i }))
+    await user.click(screen.getByRole('button', { name: 'Show products' }))
+  }
+
+  it('lists products and saves an edit', async () => {
+    const user = userEvent.setup()
+    const product: Product = {
+      id: 3,
+      barcode: null,
+      name: 'milch',
+      category: null,
+      default_unit: null,
+    }
+    vi.mocked(api.fetchProducts).mockResolvedValue([product])
+    vi.mocked(api.updateProduct).mockResolvedValue({
+      ...product,
+      name: 'Milch',
+      category: 'Dairy',
+      default_unit: 'l',
+    })
+    render(<App />)
+    await goToProductsView(user)
+
+    await user.click(await screen.findByRole('button', { name: /milch/i }))
+
+    const nameInput = screen.getByPlaceholderText('Name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'Milch')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(api.updateProduct).toHaveBeenCalledWith(
+        3,
+        expect.objectContaining({ name: 'Milch' }),
+      ),
     )
   })
 })

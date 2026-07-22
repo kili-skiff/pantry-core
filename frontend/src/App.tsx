@@ -3,9 +3,11 @@ import {
   createItem,
   deleteItem,
   fetchItems,
+  fetchProducts,
   lookupProduct,
   searchProducts,
   updateItem,
+  updateProduct,
 } from './api'
 import type { InventoryItem, Product } from './types'
 import './App.css'
@@ -54,6 +56,85 @@ function daysUntil(dateStr: string): number {
   return Math.round((new Date(dateStr).getTime() - today.getTime()) / 86_400_000)
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+  Dairy: '🥛',
+  Bakery: '🍞',
+  Produce: '🥕',
+  Baking: '🧁',
+  Grains: '🌾',
+  Spices: '🧂',
+  Pantry: '🥫',
+  Beverages: '☕',
+  Meat: '🥩',
+  Vegan: '🌱',
+}
+
+// Category-level icons are too coarse once there's more than a couple of
+// items per category (Kartoffeln and Karotten both just showed a carrot) -
+// this covers the seeded staples by name, falling back to the category
+// icon for anything not listed here (e.g. freshly scanned products).
+const PRODUCT_ICONS: Record<string, string> = {
+  milch: '🥛',
+  butter: '🧈',
+  eier: '🥚',
+  käse: '🧀',
+  bergkäse: '🧀',
+  joghurt: '🥣',
+  quark: '🥣',
+  sahne: '🥛',
+  brot: '🍞',
+  brötchen: '🥐',
+  toastbrot: '🍞',
+  brezel: '🥨',
+  reis: '🍚',
+  nudeln: '🍝',
+  spätzle: '🍝',
+  haferflocken: '🌾',
+  salz: '🧂',
+  kartoffeln: '🥔',
+  zwiebeln: '🧅',
+  knoblauch: '🧄',
+  tomaten: '🍅',
+  äpfel: '🍎',
+  bananen: '🍌',
+  karotten: '🥕',
+  zitronen: '🍋',
+  gurken: '🥒',
+  zucchini: '🥒',
+  paprika: '🫑',
+  pilze: '🍄',
+  spinat: '🥬',
+  salat: '🥬',
+  sauerkraut: '🥬',
+  radieschen: '🥕',
+  zwetschgen: '🍑',
+  birnen: '🍐',
+  trauben: '🍇',
+  olivenöl: '🫒',
+  honig: '🍯',
+  bier: '🍺',
+  apfelschorle: '🧃',
+  kaffee: '☕',
+  tee: '🍵',
+  speck: '🥓',
+  'weißwürste': '🌭',
+  'wiener würstchen': '🌭',
+  kokosmilch: '🥥',
+  hafermilch: '🥛',
+  sojamilch: '🥛',
+  mandelmilch: '🥛',
+  'veganer käse': '🧀',
+  erdnussbutter: '🥜',
+}
+
+function categoryIcon(category: string | null): string {
+  return (category && CATEGORY_ICONS[category]) || '📦'
+}
+
+function itemIcon(name: string, category: string | null): string {
+  return PRODUCT_ICONS[name.trim().toLowerCase()] ?? categoryIcon(category)
+}
+
 function expiryLabel(dateStr: string): string {
   const days = daysUntil(dateStr)
   if (days < 0) return 'expired'
@@ -84,6 +165,8 @@ function groupByCategory(items: InventoryItem[]): [string, InventoryItem[]][] {
   return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
 }
 
+type View = 'dashboard' | 'all-items' | 'products'
+
 function App() {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [form, setForm] = useState(emptyForm)
@@ -92,9 +175,14 @@ function App() {
   const [scanning, setScanning] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [removeOpen, setRemoveOpen] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
+  const [itemsQuery, setItemsQuery] = useState('')
   const [fabExpanded, setFabExpanded] = useState(false)
-  const [view, setView] = useState<'dashboard' | 'all-items'>('dashboard')
+  const [view, setView] = useState<View>('dashboard')
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [productForm, setProductForm] = useState({ name: '', category: '', default_unit: '' })
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [theme, setTheme] = useState(getInitialTheme)
@@ -120,6 +208,41 @@ function App() {
   }
 
   useEffect(loadItems, [])
+
+  function loadProducts() {
+    fetchProducts()
+      .then(setProducts)
+      .catch(() => setError('Could not load products from backend.'))
+  }
+
+  useEffect(loadProducts, [])
+
+  function openProduct(product: Product) {
+    setSelectedProduct(product)
+    setProductForm({
+      name: product.name,
+      category: product.category ?? '',
+      default_unit: product.default_unit ?? '',
+    })
+  }
+
+  async function handleUpdateProduct(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedProduct || !productForm.name) return
+
+    try {
+      const updated = await updateProduct(selectedProduct.id, {
+        name: productForm.name,
+        category: productForm.category || null,
+        default_unit: productForm.default_unit || null,
+      })
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+      setSelectedProduct(null)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update product.')
+    }
+  }
 
   // Debounced name search for autocomplete - skipped once a product is
   // already tied to the form (e.g. right after a barcode scan prefilled it),
@@ -299,7 +422,20 @@ function App() {
   const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateLabel = now.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: '2-digit' })
 
-  const overlayOpen = formOpen || removeOpen || selectedItem !== null || scanning
+  const overlayOpen =
+    formOpen ||
+    removeOpen ||
+    activityOpen ||
+    selectedItem !== null ||
+    selectedProduct !== null ||
+    scanning
+
+  const allItemsSorted = [...items].sort((a, b) => a.name.localeCompare(b.name))
+  const visibleItems = itemsQuery.trim()
+    ? allItemsSorted.filter((item) =>
+        item.name.toLowerCase().includes(itemsQuery.trim().toLowerCase()),
+      )
+    : allItemsSorted
 
   return (
     <main className="app">
@@ -328,48 +464,102 @@ function App() {
         <div className="all-items-page">
           <section className="board-column">
             <h2 className="board-title">All items</h2>
+            <div className="search-field">
+              <input
+                className="search-bar"
+                placeholder="Search items..."
+                value={itemsQuery}
+                onChange={(e) => setItemsQuery(e.target.value)}
+              />
+              {itemsQuery && (
+                <button
+                  type="button"
+                  className="search-clear"
+                  aria-label="Clear search"
+                  onClick={() => setItemsQuery('')}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <ul className="all-items-list">
-              {[...items]
+              {visibleItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="all-items-row"
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    <span className="item-tile-name">{item.name}</span>
+                    <span className="item-tile-meta">
+                      {item.quantity} {item.unit}
+                    </span>
+                    {item.category && <span className="pill">{item.category}</span>}
+                    {item.expiry_date && (
+                      <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+              {items.length === 0 && <li className="empty-hint">No items yet.</li>}
+              {items.length > 0 && visibleItems.length === 0 && (
+                <li className="empty-hint">No items match "{itemsQuery}".</li>
+              )}
+            </ul>
+          </section>
+        </div>
+      ) : view === 'products' ? (
+        <div className="all-items-page">
+          <section className="board-column">
+            <h2 className="board-title">Products</h2>
+            <ul className="all-items-list">
+              {[...products]
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map((item) => (
-                  <li key={item.id}>
+                .map((product) => (
+                  <li key={product.id}>
                     <button
                       type="button"
                       className="all-items-row"
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => openProduct(product)}
                     >
-                      <span className="item-tile-name">{item.name}</span>
-                      <span className="item-tile-meta">
-                        {item.quantity} {item.unit}
-                      </span>
-                      {item.category && <span className="pill">{item.category}</span>}
-                      {item.expiry_date && (
-                        <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                      <span className="item-tile-name">{product.name}</span>
+                      {product.category && <span className="pill">{product.category}</span>}
+                      {product.default_unit && (
+                        <span className="item-tile-meta">{product.default_unit}</span>
                       )}
+                      <span className="pill">{product.barcode ? product.barcode : 'no barcode'}</span>
                     </button>
                   </li>
                 ))}
-              {items.length === 0 && <li className="empty-hint">No items yet.</li>}
+              {products.length === 0 && <li className="empty-hint">No products yet.</li>}
             </ul>
           </section>
         </div>
       ) : (
         <div className="dashboard">
           <section className="board-column">
-            <h2 className="board-title">Expiring soon</h2>
+            <h2 className="board-title">All items</h2>
             <div className="item-grid">
-              {expiringSoon.map((item) => (
+              {allItemsSorted.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
-                  <span className="item-tile-meta">{expiryLabel(item.expiry_date as string)}</span>
+                  <span className="item-tile-meta">
+                    {item.quantity} {item.unit}
+                  </span>
+                  {item.expiry_date && (
+                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                  )}
                 </button>
               ))}
-              {expiringSoon.length === 0 && <p className="empty-hint">Nothing expiring soon.</p>}
+              {items.length === 0 && <p className="empty-hint">No items yet.</p>}
             </div>
           </section>
 
@@ -383,56 +573,104 @@ function App() {
                   className="item-tile"
                   onClick={() => setSelectedItem(item)}
                 >
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
                   <span className="item-tile-name">{item.name}</span>
                   <span className="item-tile-meta">
                     {item.quantity} {item.unit}
                   </span>
+                  {item.expiry_date && (
+                    <span className="pill pill-expiry">{expiryLabel(item.expiry_date)}</span>
+                  )}
                 </button>
               ))}
               {lowStock.length === 0 && <p className="empty-hint">Nothing low on stock.</p>}
             </div>
           </section>
 
-          <section className="board-column board-activity">
-            <div className="activity-block">
-              <h2 className="board-title">Added recently</h2>
-              <ul className="activity-list">
-                {addedRecent.map((entry) => (
-                  <li key={entry.id}>
-                    <span>{entry.item.name}</span>
-                    <div className="activity-actions">
-                      <button type="button" onClick={() => editAddedEntry(entry)}>
-                        edit
-                      </button>
-                      <button type="button" onClick={() => undoAdd(entry)}>
-                        undo
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                {addedRecent.length === 0 && <li className="empty-hint">-</li>}
-              </ul>
-            </div>
-            <div className="activity-block">
-              <h2 className="board-title">Removed recently</h2>
-              <ul className="activity-list">
-                {removedRecent.map((entry) => (
-                  <li key={entry.id}>
-                    <span>{entry.item.name}</span>
-                    <div className="activity-actions">
-                      <button type="button" onClick={() => editRemovedEntry(entry)}>
-                        edit
-                      </button>
-                      <button type="button" onClick={() => undoRemove(entry)}>
-                        undo
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                {removedRecent.length === 0 && <li className="empty-hint">-</li>}
-              </ul>
+          <section className="board-column">
+            <h2 className="board-title">Expiring soon</h2>
+            <div className="item-grid">
+              {expiringSoon.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="item-tile"
+                  onClick={() => setSelectedItem(item)}
+                >
+                  <span className="item-tile-icon">{itemIcon(item.name, item.category)}</span>
+                  <span className="item-tile-name">{item.name}</span>
+                  <span className="item-tile-meta">
+                    {item.quantity} {item.unit}
+                  </span>
+                  <span className="pill pill-expiry">
+                    {expiryLabel(item.expiry_date as string)}
+                  </span>
+                </button>
+              ))}
+              {expiringSoon.length === 0 && <p className="empty-hint">Nothing expiring soon.</p>}
             </div>
           </section>
+        </div>
+      )}
+
+      {activityOpen && (
+        <div className="add-overlay" onClick={() => setActivityOpen(false)}>
+          <div className="add-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="add-panel-header">
+              <h2>Recent activity</h2>
+              <button
+                type="button"
+                className="add-panel-close"
+                aria-label="Close"
+                onClick={() => setActivityOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="board-activity">
+              <div className="activity-block">
+                <h2 className="board-title">Added recently</h2>
+                <ul className="activity-list">
+                  {addedRecent.map((entry) => (
+                    <li key={entry.id}>
+                      <span>{entry.item.name}</span>
+                      <div className="activity-actions">
+                        <button type="button" onClick={() => editAddedEntry(entry)}>
+                          edit
+                        </button>
+                        <button type="button" onClick={() => undoAdd(entry)}>
+                          undo
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                  {addedRecent.length === 0 && <li className="empty-hint">-</li>}
+                </ul>
+              </div>
+              <div className="activity-block">
+                <h2 className="board-title">Removed recently</h2>
+                <ul className="activity-list">
+                  {removedRecent.map((entry) => (
+                    <li key={entry.id}>
+                      <span>{entry.item.name}</span>
+                      <div className="activity-actions">
+                        <button type="button" onClick={() => editRemovedEntry(entry)}>
+                          edit
+                        </button>
+                        <button type="button" onClick={() => undoRemove(entry)}>
+                          undo
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                  {removedRecent.length === 0 && <li className="empty-hint">-</li>}
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -529,6 +767,57 @@ function App() {
             >
               Remove item
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedProduct && (
+        <div className="add-overlay" onClick={() => setSelectedProduct(null)}>
+          <div className="add-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="add-panel-header">
+              <h2>Edit product</h2>
+              <button
+                type="button"
+                className="add-panel-close"
+                aria-label="Close"
+                onClick={() => setSelectedProduct(null)}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="item-detail-pills">
+              <span className="pill">
+                {selectedProduct.barcode ? selectedProduct.barcode : 'no barcode'}
+              </span>
+            </div>
+
+            <form className="add-form" onSubmit={handleUpdateProduct}>
+              <input
+                placeholder="Name"
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+              />
+              <input
+                placeholder="Category (optional)"
+                value={productForm.category}
+                onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+              />
+              <select
+                value={productForm.default_unit}
+                onChange={(e) => setProductForm({ ...productForm, default_unit: e.target.value })}
+              >
+                <option value="">No default unit</option>
+                {UNITS.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
+              </select>
+              <button type="submit">Save</button>
+            </form>
           </div>
         </div>
       )}
@@ -723,25 +1012,44 @@ function App() {
               <button
                 type="button"
                 className="fab fab-mini fab-pop"
-                aria-label={view === 'all-items' ? 'Back to dashboard' : 'Show all items'}
+                aria-label="Show all items"
                 onClick={() => {
-                  setView((v) => (v === 'all-items' ? 'dashboard' : 'all-items'))
+                  setView('all-items')
                   setFabExpanded(false)
                 }}
               >
-                {view === 'all-items' ? (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M8 6h13M8 12h13M8 18h13" />
-                    <path d="M3 6h.01M3 12h.01M3 18h.01" />
-                  </svg>
-                )}
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M8 6h13M8 12h13M8 18h13" />
+                  <path d="M3 6h.01M3 12h.01M3 18h.01" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="fab fab-mini fab-pop"
+                aria-label="Show products"
+                onClick={() => {
+                  setView('products')
+                  setFabExpanded(false)
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 12.5l-7.5 7.5L4 11.5V4h7.5l8.5 8.5z" />
+                  <circle cx="8" cy="8" r="1.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="fab fab-mini fab-pop"
+                aria-label="Show recent activity"
+                onClick={() => {
+                  setActivityOpen(true)
+                  setFabExpanded(false)
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 3" />
+                </svg>
               </button>
             </>
           )}

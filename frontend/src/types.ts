@@ -36,3 +36,9 @@ export interface Product {
   category: string | null
   default_unit: string | null
 }
+
+export interface ProductUpdate {
+  name: string
+  category: string | null
+  default_unit: string | null
+}
