@@ -223,6 +223,50 @@ def test_create_item_stacks_onto_an_existing_entry_with_the_same_expiry_date(cli
     assert body["quantity"] == 2
 
 
+def test_create_item_stacking_syncs_the_newly_resolved_product_link(
+    client, monkeypatch
+):
+    from app import open_food_facts
+
+    # Manually entered first, so it starts out unlinked to any barcode.
+    first = client.post(
+        "/items", json={"name": "Nutella", "quantity": 1, "unit": "pcs"}
+    )
+    item_id = first.json()["id"]
+    assert first.json()["source"] == "manual"
+
+    # Scanning the same product later resolves (and reuses) that product,
+    # now with a category from Open Food Facts - the frontend prefills the
+    # form from it, so the request carries it along too.
+    monkeypatch.setattr(
+        open_food_facts,
+        "lookup",
+        lambda barcode: open_food_facts.LookupResult(
+            name="Nutella", category="Spreads"
+        ),
+    )
+    product_id = client.get("/products/3017620422003").json()["id"]
+
+    second = client.post(
+        "/items",
+        json={
+            "name": "Nutella",
+            "category": "Spreads",
+            "quantity": 1,
+            "unit": "pcs",
+            "product_id": product_id,
+        },
+    )
+
+    assert second.status_code == 201
+    body = second.json()
+    assert body["id"] == item_id
+    assert body["quantity"] == 2
+    assert body["product_id"] == product_id
+    assert body["source"] == "scanned"
+    assert body["category"] == "Spreads"
+
+
 def test_create_item_keeps_a_different_expiry_date_as_a_separate_entry(client):
     client.post(
         "/items",

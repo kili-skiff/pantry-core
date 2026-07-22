@@ -47,6 +47,7 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
             db.add(product)
             db.flush()
         data["product_id"] = product.id
+        data["source"] = models.Source.manual
 
     # Stack onto an existing entry instead of adding a duplicate line, but
     # only when that doesn't lose expiry info: same name+unit, and either no
@@ -69,6 +70,13 @@ def create_item(payload: schemas.InventoryItemCreate, db: Session = Depends(get_
         existing.quantity += data["quantity"]
         if existing.expiry_date is None and data["expiry_date"] is not None:
             existing.expiry_date = data["expiry_date"]
+        if existing.category is None and data["category"] is not None:
+            existing.category = data["category"]
+        # Sync the freshly resolved product link/source too - otherwise a
+        # scanned duplicate of a manually-entered item would silently keep
+        # pointing at the old (unlinked/less complete) product record.
+        existing.product_id = data["product_id"]
+        existing.source = data["source"]
         db.commit()
         db.refresh(existing)
         return existing
@@ -121,10 +129,24 @@ def get_product(barcode: str, db: Session = Depends(get_db)):
     if result is None:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    product = models.Product(
-        barcode=barcode, name=result.name, category=result.category
+    # Reuse an existing barcode-less product of the same name (e.g. one
+    # created from a manual item entry) instead of creating a duplicate
+    # catalog entry for what's really the same product.
+    product = (
+        db.query(models.Product)
+        .filter(models.Product.barcode.is_(None))
+        .filter(models.Product.name.ilike(result.name))
+        .first()
     )
-    db.add(product)
+    if product is not None:
+        product.barcode = barcode
+        if result.category is not None:
+            product.category = result.category
+    else:
+        product = models.Product(
+            barcode=barcode, name=result.name, category=result.category
+        )
+        db.add(product)
     db.commit()
     db.refresh(product)
     return product
