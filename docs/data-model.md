@@ -24,6 +24,7 @@ erDiagram
         float quantity
         string unit
         date expiry_date
+        float min_quantity "nullable"
         date added_at
         string source "manual / imported / scanned"
     }
