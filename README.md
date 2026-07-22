@@ -5,13 +5,17 @@ built to run on a Raspberry Pi 5 with a touchscreen.
 
 ## What works right now
 
-- Backend API to add, list, and remove inventory items (name, category,
-  quantity, unit, expiry date), with input validation
-- Web UI showing the current inventory as a list, with a form to add items
-  and a button to remove them
+- Backend API to add, list, update, and remove inventory items (name,
+  category, quantity, unit, expiry date, low-stock threshold), with input
+  validation
+- Web UI: a dashboard (all items, low on stock, expiring soon), a
+  searchable all-items view, and a product catalog view - plus per-item
+  editing (quantity stepper, expiry date, low-stock threshold) and a
+  recent-activity feed with undo
 - Barcode scanning: camera-based scan (webcam, via ZXing) or manual entry
   looks up the product locally or via Open Food Facts, pre-fills the add
-  form
+  form; name autocomplete does the same for items without a barcode
+- Light/dark theme toggle
 
 ## Stack
 
@@ -51,6 +55,13 @@ cd backend
 ./.venv/bin/pytest
 ```
 
+Frontend tests:
+
+```bash
+cd frontend
+npm run test
+```
+
 ## VS Code
 
 `.vscode/` has tasks and debug configs set up:
@@ -74,7 +85,9 @@ trade-offs behind them in `docs/decisions/0002-pi-deployment.md`.
 
 ## Status
 
-MVP (manual inventory tracking) works end to end, backend covered by
-pytest, deployed to the Pi and running in kiosk mode. Barcode scanning is
-in place too. Not yet done: frontend tests. Planned later: expiry
-warnings, importing items by scanning a supermarket receipt.
+MVP (manual inventory tracking) works end to end, backend and frontend
+both covered by tests (pytest / Vitest), deployed to the Pi and running
+in kiosk mode. Barcode scanning, autocomplete, and the product catalog
+are in place too. Planned: estimating expiry dates from category,
+notifications on upcoming expiry, importing items by scanning a
+supermarket receipt.
