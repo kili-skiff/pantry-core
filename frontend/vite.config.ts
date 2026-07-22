@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     watch: {
-      // WSL2 + Windows-Laufwerk (/mnt/c/...): native Dateisystem-Events
-      // kommen unzuverlässig an, deshalb aktiv pollen statt darauf zu warten.
+      // WSL2 + Windows drive (/mnt/c/...): native filesystem events arrive
+      // unreliably there, so poll actively instead of relying on them.
       usePolling: true,
     },
   },

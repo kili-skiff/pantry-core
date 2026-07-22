@@ -154,8 +154,8 @@ def delete_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
 
 
-# Muss nach den API-Routen stehen, sonst fängt der Mount auch /items etc. ab.
-# Existiert nur nach `npm run build` (lokal im Dev-Betrieb i.d.R. nicht vorhanden).
+# Must come after the API routes, otherwise the mount would swallow /items etc.
+# Only exists after `npm run build` (usually absent in local dev).
 frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if frontend_dist.is_dir():
     app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
